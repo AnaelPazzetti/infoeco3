@@ -53,14 +53,27 @@ class _PrefeituraCState extends State<PrefeituraC> {
       await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
         'role': UserRole.prefeitura.toString().split('.').last,
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cadastro realizado com sucesso!')),
+
+      if (!mounted) return;
+
+      // Show success alert and then navigate back to the main screen
+      await showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Sucesso'),
+            content: const Text('Usuário Criado'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(dialogContext).pop(), // Close the dialog
+              ),
+            ],
+          );
+        },
       );
-      // Redireciona para o menu
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => Menu()),
-      );
+
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
       // Mostra erro de autenticação
       ScaffoldMessenger.of(context).showSnackBar(

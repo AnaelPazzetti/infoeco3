@@ -128,34 +128,48 @@ class _CooperativaState extends State<Cooperativa> {
           "VIDRO": 0
         }
       });
-      // Não é necessário criar documentos vazios nas subcoleções ao cadastrar a cooperativa.
-      // As subcoleções serão criadas automaticamente quando o primeiro documento for adicionado a elas.
-      // await cooperativaRef.collection('cooperados').add({});
-      // await cooperativaRef.collection('historico_vendas').add({});
-      // await cooperativaRef.collection('presencas').add({});
+      // Salva o perfil do usuário na coleção 'users'
+      await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
+        'role': UserRole.cooperativa.toString().split('.').last,
+      });
 
-      // Mostra mensagem de sucesso
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cadastro realizado com sucesso!')),
+      if (!mounted) return;
+
+      // Mostra um alerta de sucesso e volta para a tela principal
+      await showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Sucesso'),
+            content: const Text('Usuário Criado'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(dialogContext).pop(), // Fecha o diálogo
+              ),
+            ],
+          );
+        },
       );
-      // Redireciona para o menu
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => Menu()),
-      );
+
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
       // Mostra erro de autenticação
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro: ${e.message}')),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Cadastro Cooperativa')),
       body: Form(
         key: _formKey,
         child: Center(
