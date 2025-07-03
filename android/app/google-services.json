@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "795380694053",
+    "firebase_url": "https://projeto-catadores-default-rtdb.firebaseio.com",
+    "project_id": "projeto-catadores",
+    "storage_bucket": "projeto-catadores.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795380694053:android:e081f28051db169987d3cc",
+        "android_client_info": {
+          "package_name": "com.example.infoeco"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATtYApm7Arx0FoY7RGnfVUrcyEnxZs52k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

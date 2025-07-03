@@ -1,0 +1,14 @@
+{
+  "project": "Flutter App with Firestore",
+  "description": "Develop a Flutter app using Firestore as the backend, with emphasis on clean, reusable, and well-commented code.",
+  "requirements": {
+    "comments": "All code must be fully and clearly commented in pt-br (Portuguese - Brazil).",
+    "code_reuse": "Maximize reuse of code through components, functions, and clean architecture.",
+    "database": {
+      "type": "Firestore (Cloud Firestore)",
+      "validations": "Use Firestore's security rules and validations whenever possible.",
+      "querying": "Design database and queries to handle somewhat complex queries efficiently using Firestore's capabilities (compound queries, indexing, etc.).",
+      "data_validation": "Before inserting or updating data, check constraints and existence using Firestore queries when applicable."
+    }
+  }
+}
