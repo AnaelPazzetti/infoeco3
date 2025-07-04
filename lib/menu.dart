@@ -94,8 +94,15 @@ class _MenuState extends State<Menu> {
       );
     }
 
-    final bool isAguardandoAprovacao = _userProfile?.role == UserRole.cooperado && _userProfile?.isAprovado == true;
-    if (isAguardandoAprovacao) {
+    // Checagem correta de aprovação
+    final isPrefeitura = _userProfile?.role == UserRole.prefeitura;
+    final isCooperativa = _userProfile?.role == UserRole.cooperativa;
+    final isCooperado = _userProfile?.role == UserRole.cooperado;
+    final dynamic aprovadoValue = _userProfile?.isAprovado;
+    final bool isAprovado = aprovadoValue == true;
+
+    // Cooperado não aprovado
+    if (isCooperado && !isAprovado) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Menu'),
@@ -109,10 +116,21 @@ class _MenuState extends State<Menu> {
         ),
       );
     }
-
-    final isPrefeitura = _userProfile?.role == UserRole.prefeitura;
-    final isCooperativa = _userProfile?.role == UserRole.cooperativa;
-    final isCooperado = _userProfile?.role == UserRole.cooperado;
+    // Cooperativa não aprovada
+    if (isCooperativa && !isAprovado) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Menu'),
+        ),
+        body: const Center(
+          child: Text(
+            'Aguardando aprovacao da prefeitura',
+            style: TextStyle(fontSize: 20, color: Colors.orange, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
 
     // Wrap Scaffold with PopScope to handle back button
     return PopScope(

@@ -119,8 +119,8 @@ class _Perfil extends State<Perfil> {
 
     try {
       // Upload para Firebase Storage
-      String fileName = 'foto_perfil_${user.uid}.${image.name.split('.').last}';
-      Reference storageRef = FirebaseStorage.instance.ref().child('fotos_perfil').child(fileName);
+      String fileExtension = image.name.split('.').last;
+      Reference storageRef = FirebaseStorage.instance.ref().child('fotos_perfil').child(user.uid).child('profile.$fileExtension');
       
       UploadTask uploadTask;
       if (kIsWeb) {

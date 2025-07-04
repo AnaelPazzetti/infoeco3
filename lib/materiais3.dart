@@ -335,7 +335,12 @@ class _Materiais3State extends State<Materiais3> {
                   .collection('cooperados')
                   .get();
               for (final cooperadoDoc in cooperadosSnapshot.docs) {
-                final materiaisQtdCooperado = Map<String, dynamic>.from(cooperadoDoc.data()['materiais_qtd'] ?? {});
+                final cooperadoData = cooperadoDoc.data();
+                final materiaisQtdCooperado = Map<String, dynamic>.from(cooperadoData['materiais_qtd'] ?? {});
+                // Usa o valor da partilha já calculado e armazenado no documento do cooperado.
+                // Isso garante consistência, mesmo que os preços dos materiais tenham mudado.
+                final double valorPartilhaExistente = (cooperadoData['valor_partilha'] as num? ?? 0.0).toDouble();
+
                 // Cria documento em 'partilhas' do cooperado
                 final partilhaRef = await FirebaseFirestore.instance
                     .collection('prefeituras')
@@ -349,6 +354,7 @@ class _Materiais3State extends State<Materiais3> {
                       'materiais_qtd': materiaisQtdCooperado,
                       'materiais_preco': materiaisPreco,
                       'data': DateTime.now().toIso8601String(),
+                      'valor_partilha': valorPartilhaExistente,
                     });
                 // Salva o UID da partilha da cooperativa no documento do cooperado
                 await partilhaRef.update({

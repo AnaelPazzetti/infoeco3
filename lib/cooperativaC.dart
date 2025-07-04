@@ -71,6 +71,7 @@ class _CooperativaState extends State<Cooperativa> {
         'cnpj': _cnpjController.text,
         'email': _emailController.text,
         'prefeitura_uid': _selectedPrefeituraUid, // Salva o UID da prefeitura escolhida
+        'isAprovado': false, // Adicionado campo de aprovação
         'materiais_preco': {
           "ALUMINIO DURO": 999.9,
           "ALUMINIO GROSSO": 999.9,
@@ -131,6 +132,7 @@ class _CooperativaState extends State<Cooperativa> {
       // Salva o perfil do usuário na coleção 'users'
       await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
         'role': UserRole.cooperativa.toString().split('.').last,
+        'isAprovado': false, // Adicionado campo de aprovação
       });
 
       if (!mounted) return;

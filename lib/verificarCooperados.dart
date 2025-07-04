@@ -116,6 +116,7 @@ class _VerificarCooperadosState extends State<VerificarCooperados> {
                                                 onPressed: viewOnly
                                                     ? null
                                                     : () async {
+                                                        // Aprova no subdocumento do cooperado
                                                         await FirebaseFirestore.instance
                                                             .collection('prefeituras')
                                                             .doc(prefeituraUid)
@@ -124,6 +125,11 @@ class _VerificarCooperadosState extends State<VerificarCooperados> {
                                                             .collection('cooperados')
                                                             .doc(doc.id)
                                                             .update({'aprovacao_cooperativa': true});
+                                                        // Também atualiza o campo isAprovado no registro do usuário
+                                                        await FirebaseFirestore.instance
+                                                            .collection('users')
+                                                            .doc(doc.id)
+                                                            .update({'isAprovado': true});
                                                         setState(() {});
                                                       },
                                                 style: ElevatedButton.styleFrom(

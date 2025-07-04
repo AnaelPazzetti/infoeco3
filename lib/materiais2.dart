@@ -36,41 +36,64 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
 
   // Carrega os materiais e preços da cooperativa logada
   Future<void> _carregarMateriais() async {
-    // Se os UIDs foram passados pelo widget (modo prefeitura), use-os diretamente.
-    if (widget.cooperativaUid != null && widget.prefeituraUid != null) {
+    final profile = await _userProfileService.getUserProfileInfo();
+    if (profile.role == UserRole.cooperativa) {
+      cooperativaUid = profile.cooperativaUid;
+      // Busca prefeituraUid do perfil, pois é salvo no registro
+      prefeituraUid = profile.prefeituraUid;
+      debugPrint('Cooperativa logada: cooperativaUid=$cooperativaUid, prefeituraUid=$prefeituraUid');
+      // Busca o documento da cooperativa como subcoleção de prefeituras
+      final doc = await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(profile.prefeituraUid)
+          .collection('cooperativas')
+          .doc(cooperativaUid)
+          .get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null) {
+          // Corrige: prefeituraUid deve ser lida do campo do documento
+          prefeituraUid = data['prefeitura_uid'] as String?;
+          debugPrint('Corrigido: prefeituraUid lido do doc = $prefeituraUid');
+          if (data.containsKey('materiais_preco')) {
+            materiaisPreco = Map<String, double>.from(data['materiais_preco']);
+          }
+          if (data.containsKey('materiais_qtd')) {
+            materiaisQtd = Map<String, dynamic>.from(data['materiais_qtd']);
+          }
+        }
+      }
+    } else if (widget.cooperativaUid != null && widget.prefeituraUid != null) {
+      // Prefeitura/admin pode ver qualquer cooperativa
       cooperativaUid = widget.cooperativaUid;
       prefeituraUid = widget.prefeituraUid;
-    } else {
-      // Caso contrário, busca as informações do perfil do usuário logado.
-      final profile = await _userProfileService.getUserProfileInfo();
-      if (profile.role == UserRole.cooperativa) {
-        cooperativaUid = profile.cooperativaUid;
-        prefeituraUid = profile.prefeituraUid;
+      debugPrint('Admin/prefeitura: cooperativaUid=$cooperativaUid, prefeituraUid=$prefeituraUid');
+      final doc = await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(prefeituraUid)
+          .collection('cooperativas')
+          .doc(cooperativaUid)
+          .get();
+      if (doc.exists && doc.data()?.containsKey('materiais_preco') == true) {
+        materiaisPreco = Map<String, double>.from(doc['materiais_preco']);
       }
-    }
-
-    if (cooperativaUid == null || prefeituraUid == null) {
-      setState(() => isLoading = false);
-      return;
-    }
-    final doc = await FirebaseFirestore.instance
-        .collection('prefeituras')
-        .doc(prefeituraUid)
-        .collection('cooperativas')
-        .doc(cooperativaUid)
-        .get();
-    if (doc.exists && doc.data()?.containsKey('materiais_preco') == true) {
-      materiaisPreco = Map<String, double>.from(doc['materiais_preco']);
-    }
-    if (doc.exists && doc.data()?.containsKey('materiais_qtd') == true) {
-      materiaisQtd = Map<String, dynamic>.from(doc['materiais_qtd']);
+      if (doc.exists && doc.data()?.containsKey('materiais_qtd') == true) {
+        materiaisQtd = Map<String, dynamic>.from(doc['materiais_qtd']);
+      }
+    } else {
+      cooperativaUid = null;
+      prefeituraUid = null;
+      debugPrint('Erro: UIDs nulos.');
     }
     setState(() => isLoading = false);
   }
 
   // Recalcula valor_partilha de todos os cooperados após alteração de materiais_preco
   Future<void> _recalcularValorPartilhaParaTodosCooperados() async {
-    if (cooperativaUid == null || prefeituraUid == null) return;
+    if (cooperativaUid == null) return;
+    // O prefeituraUid é carregado em _carregarMateriais e deve estar disponível aqui.
+    // A verificação anterior, que foi removida, impedia incorretamente a cooperativa de executar esta função.
+    if (prefeituraUid == null) return; 
     // Busca o preço atualizado dos materiais
     final docCoop = await FirebaseFirestore.instance
         .collection('prefeituras')

@@ -51,7 +51,40 @@ class UserProfileService {
             role: userRole,
           );
         } else if (userRole == UserRole.cooperativa) {
-          return UserProfileInfo(cooperativaUid: userId, prefeituraUid: data['prefeituraUid'] as String?, role: userRole);
+          // Always try to get prefeituraUid from the user doc, but if missing, migrate from Firestore
+          if (data['prefeituraUid'] == null) {
+            // Try to find the correct prefeituraUid from Firestore and update the user doc
+            final prefeiturasSnapshot = await _firestore.collection('prefeituras').get();
+            for (final prefeituraDoc in prefeiturasSnapshot.docs) {
+              final cooperativasSnapshot = await prefeituraDoc.reference.collection('cooperativas').get();
+              for (final coopDoc in cooperativasSnapshot.docs) {
+                if (coopDoc.id == userId) {
+                  final coopData = coopDoc.data();
+                  String? prefeituraUidFromDoc;
+                  if (coopData != null && coopData.containsKey('prefeitura_uid')) {
+                    prefeituraUidFromDoc = coopData['prefeitura_uid'];
+                  } else {
+                    prefeituraUidFromDoc = prefeituraDoc.id;
+                  }
+                  await _firestore.collection('users').doc(userId).update({
+                    'prefeituraUid': prefeituraUidFromDoc,
+                  });
+                  return UserProfileInfo(
+                      cooperativaUid: userId,
+                      prefeituraUid: prefeituraUidFromDoc,
+                      role: userRole,
+                      isAprovado: data['isAprovado'] as bool? ?? false);
+                }
+              }
+            }
+            // If not found, fallback
+            return UserProfileInfo(cooperativaUid: userId, role: userRole, isAprovado: data['isAprovado'] as bool? ?? false);
+          }
+          return UserProfileInfo(
+              cooperativaUid: userId,
+              prefeituraUid: data['prefeituraUid'] as String?,
+              role: userRole,
+              isAprovado: data['isAprovado'] as bool? ?? false);
         } else if (userRole == UserRole.prefeitura) {
           return UserProfileInfo(prefeituraUid: userId, role: userRole);
         }
@@ -99,14 +132,25 @@ class UserProfileService {
       final cooperativasSnapshot = await prefeituraDoc.reference.collection('cooperativas').get();
       for (final coopDoc in cooperativasSnapshot.docs) {
         if (coopDoc.id == userId) {
+          // Busca prefeitura_uid do doc da cooperativa
+          final coopData = coopDoc.data();
+          final bool isAprovado = coopData['isAprovado'] as bool? ?? false;
+          String? prefeituraUidFromDoc;
+          if (coopData != null && coopData.containsKey('prefeitura_uid')) {
+            prefeituraUidFromDoc = coopData['prefeitura_uid'];
+          } else {
+            prefeituraUidFromDoc = prefeituraDoc.id;
+          }
           // Migrate this user
           await _firestore.collection('users').doc(userId).set({
             'role': UserRole.cooperativa.toString().split('.').last,
-            'prefeituraUid': prefeituraDoc.id,
+            'prefeituraUid': prefeituraUidFromDoc,
+            'isAprovado': isAprovado,
           });
           return UserProfileInfo(
             cooperativaUid: userId,
-            prefeituraUid: prefeituraDoc.id,
+            prefeituraUid: prefeituraUidFromDoc,
+            isAprovado: isAprovado,
             role: UserRole.cooperativa,
           );
         }

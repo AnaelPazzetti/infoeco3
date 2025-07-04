@@ -106,6 +106,11 @@ class _VerificarCooperativasState extends State<VerificarCooperativas> {
                                                       .collection('cooperativas')
                                                       .doc(doc.id)
                                                       .update({'aprovacao_prefeitura': true});
+                                                  // Também atualiza o campo de aprovação no registro do usuário cooperativa
+                                                  await FirebaseFirestore.instance
+                                                      .collection('users')
+                                                      .doc(doc.id)
+                                                      .update({'isAprovado': true});
                                                   setState(() {});
                                                 },
                                                 style: ElevatedButton.styleFrom(
