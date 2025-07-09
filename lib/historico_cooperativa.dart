@@ -90,74 +90,93 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
     final materiaisQtd = partilhaSelecionada['materiais_qtd'] ?? {};
     final materiaisPrecoPartilha = partilhaSelecionada['materiais_preco'] ?? {};
     return Scaffold(
-      appBar: AppBar(title: const Text('Histórico de Partilhas')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+      appBar: AppBar(
+        title: const Text('Histórico de Partilhas'),
+        backgroundColor: Colors.green,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          padding: const EdgeInsets.all(16.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: 700),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text('Histórico de Partilhas',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Selecionar data: '),
-                          DropdownButton<int>(
-                            value: selectedPartilhaIndex,
-                            items: [
-                              for (int i = 0; i < partilhas.length; i++)
-                                DropdownMenuItem(
-                                  value: i,
-                                  child: Text(_formatarData(partilhas[i]['data'])),
+                const Text(
+                  'Histórico de Partilhas',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Selecionar data: ', style: TextStyle(fontSize: 16)),
+                    DropdownButton<int>(
+                      value: selectedPartilhaIndex,
+                      items: [
+                        for (int i = 0; i < partilhas.length; i++)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text(_formatarData(partilhas[i]['data'])),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => selectedPartilhaIndex = value);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                tableContainer(
+                  child: materiaisQtd.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(
+                            child: Text(
+                                'Nenhum material registrado para esta partilha.'),
+                          ),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                                child: Table(
+                                  columnWidths: const <int, TableColumnWidth>{
+                                    0: FlexColumnWidth(2),
+                                    1: FlexColumnWidth(1.5),
+                                    2: FlexColumnWidth(1.5),
+                                  },
+                                  border: TableBorder.all(
+                                      color: Colors.grey[300]!, width: 1),
+                                  children: [
+                                    TableRow(children: [
+                                      celulaHeader('Material'),
+                                      celulaHeader('Preço (R\$)'),
+                                      celulaHeader('Quantidade (kg)'),
+                                    ]),
+                                    for (final entry in materiaisQtd.entries)
+                                      TableRow(children: [
+                                        celula(entry.key),
+                                        celula((materiaisPrecoPartilha[entry.key] as num?)
+                                                ?.toStringAsFixed(2) ??
+                                            '-'),
+                                        celula(entry.value.toString()),
+                                      ]),
+                                  ],
                                 ),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) setState(() => selectedPartilhaIndex = value);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minWidth: 500),
-                          child: Table(
-                            border: TableBorder.all(color: Colors.black),
-                            defaultColumnWidth: const FixedColumnWidth(150.0),
-                            children: [
-                              TableRow(children: [
-                                celulaHeader('Material'),
-                                celulaHeader('Preço (R\$)'),
-                                celulaHeader('Quantidade (kg)'),
-                              ]),
-                              for (final entry in materiaisQtd.entries)
-                                TableRow(children: [
-                                  celula(entry.key),
-                                  celula(materiaisPrecoPartilha[entry.key]?.toString() ?? '-'),
-                                  celula(entry.value.toString()),
-                                ]),
-                            ],
-                          ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

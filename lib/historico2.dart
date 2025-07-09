@@ -34,19 +34,20 @@ class _WidgetTable extends State<WidgetTable> {
       appBar: AppBar(title: const Text('Histórico 2')),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.95;
-          return Center(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: tableWidth),
-                      child: SingleChildScrollView(
+          final double tableWidth = constraints.maxWidth * 0.9;
+          return SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: tableWidth),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Table(
                           columnWidths: const <int, TableColumnWidth>{
@@ -65,10 +66,10 @@ class _WidgetTable extends State<WidgetTable> {
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           );
         },
@@ -76,7 +77,7 @@ class _WidgetTable extends State<WidgetTable> {
     );
   }
 
-  celulaHeader(String texto) {
+  Widget celulaHeader(String texto) {
     return Container(
       color: Colors.orange,
       padding: const EdgeInsets.all(8.0),
