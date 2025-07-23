@@ -135,7 +135,7 @@ class _Calendario extends State<Calendario> {
     final dataNormalizada = _normalizarData(dateTime);
     return _eventosPorDia[dataNormalizada] ?? [];
   }
-
+  //Dialog para adição de eventos
   _showAddEventDialog() async {
     TimeOfDay selectedTime = TimeOfDay.now();
     await showDialog(
