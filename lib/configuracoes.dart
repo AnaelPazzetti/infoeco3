@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Importa o Firebase Auth
 import 'package:infoeco3/main.dart'; // Importa a tela principal para redirecionamento
 import 'ajuda.dart';
-import 'notificacoes.dart';
 import 'troca_senha.dart';
 
 class Configuracoes extends StatefulWidget {

@@ -1,5 +1,5 @@
 // Este arquivo implementa a autenticação por telefone usando o Firebase.
-// Ele permite que o usuário insira um número de telefone, receba um código de verificação (OTP) e o valide para autenticação.
+// Ele permite que o usuário insira um número de telefone, receba um código de verificação e o valide para autenticação.
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';

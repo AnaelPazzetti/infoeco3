@@ -1,6 +1,5 @@
 // Este arquivo implementa a tela de login para cooperados.
 // Autenticação é feita por número de telefone usando Firebase Auth.
-// O código segue as guidelines do projeto: limpo, reutilizável e totalmente comentado em pt-br.
 
 import 'package:flutter/material.dart';
 import 'package:infoeco3/menu.dart';

@@ -1,9 +1,7 @@
 // Este arquivo implementa a funcionalidade de exibição de materiais separados
-// por cooperativas. Ele exibe uma tabela com os materiais e suas quantidades.
+// por cooperativas. Ele exibe uma tabela com os materiais e suas quantidades 
+//e permite a realizacao de partilhas.
 
-
-//TODO: BUG WHEN A MATERIAL_PRECO IS CHANGED, COOPERADO.VALOR.PARTILHA IS NOT UPDATED CAUSING INCONSISTENCIES
-// On change of materiais_preco, recalculate valor_partilha for all cooperados;
 
 
 import 'package:cloud_firestore/cloud_firestore.dart';

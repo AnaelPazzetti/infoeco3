@@ -1,4 +1,3 @@
-// materiais4.dart
 // Tela para exibir os materiais coletados pelo cooperado (materiais_qtd)
 // Comentado em pt-br
 

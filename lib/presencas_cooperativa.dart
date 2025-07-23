@@ -77,7 +77,6 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.95;
           return SingleChildScrollView(
             scrollDirection: Axis.vertical,
             padding: const EdgeInsets.all(16.0),

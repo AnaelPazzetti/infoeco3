@@ -1,4 +1,4 @@
-// Este arquivo implementa a tela de login principal.
+// Este arquivo implementa a tela de login.
 // Ele permite que o usuário escolha entre diferentes tipos de login: Prefeitura, Cooperativa ou Cooperado.
 
 import 'package:flutter/material.dart';

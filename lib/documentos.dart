@@ -11,13 +11,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb; // Para verificar se está na web
 import 'user_profile_service.dart'; // Import the new service
 
-//Código para o envio de documentos
-
-// O widget Documentos que criava um MaterialApp foi removido.
-// Navegue diretamente para Documentos1 ou, se Documentos for um ponto de entrada
-// para esta funcionalidade, ele deveria apenas construir Documentos1.
-// Exemplo: class Documentos extends StatelessWidget { const Documentos({super.key}); @override Widget build(BuildContext context) { return Documentos1(); } }
-// Mas é mais comum navegar diretamente para Documentos1.
 
 class Documentos1 extends StatefulWidget {
   const Documentos1({super.key});
@@ -128,8 +121,6 @@ class _DocumentosState extends State<Documentos1> {
       print('Erro: Usuário não autenticado.');
       return;
     }
-
-    // --- NOVA LÓGICA PARA DEFINIR O CAMINHO DE UPLOAD ---
     UserProfileInfo userProfile;
     try {
       userProfile = await _userProfileService.getUserProfileInfo();
@@ -161,7 +152,6 @@ class _DocumentosState extends State<Documentos1> {
       print('Erro: Perfil de usuário não configurado para este tipo de upload. Role: ${userProfile.role}');
       return;
     }
-    // --- FIM DA NOVA LÓGICA ---
 
     try {
       print('Iniciando upload para Firebase Storage: $storagePath');

@@ -1,3 +1,5 @@
+// Tela onde o cooperado registra os materiais coletados
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -219,7 +221,7 @@ class _MateriaisState extends State<Materiais> {
       appBar: AppBar(title: const Text('Materiais')),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.8; // Set table width to 80% of screen width
+          final double tableWidth = constraints.maxWidth * 0.8; 
           return Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -229,9 +231,8 @@ class _MateriaisState extends State<Materiais> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: tableWidth), // Apply the calculated width
-                      child: Table(
-                        // Using FlexColumnWidth to make columns responsive and share available space.
+                      constraints: BoxConstraints(maxWidth: tableWidth),
+                      child: Table(  
                         columnWidths: const <int, TableColumnWidth>{
                           0: FlexColumnWidth(2.5), // Material (Dropdown)
                           1: FlexColumnWidth(1.5), // Valor/kg
@@ -365,7 +366,6 @@ class _MateriaisState extends State<Materiais> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             child: Text(
-              // Corrigido: removido caractere inválido antes do valor
               'Valor aproximado da partilha: R\$ ${valorPartilha.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
@@ -376,7 +376,7 @@ class _MateriaisState extends State<Materiais> {
           ),
         ),
       ),
-    ); // Fecha Scaffold
+    );
   }
 }
 

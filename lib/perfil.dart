@@ -24,7 +24,7 @@ class _Perfil extends State<Perfil> {
   String? nome;
   String? documento;
   String? telefone;
-  String? fotoUrl; // Novo campo para a URL da foto do perfil
+  String? fotoUrl;
   bool _isUploading = false; // Estado para controlar o upload da foto
   bool isLoading = true;
 
@@ -35,7 +35,6 @@ class _Perfil extends State<Perfil> {
   }
 
   // Busca os dados do usuário autenticado no Firestore e exibe na tela de perfil
-  // Agora busca cooperado como subcoleção de cooperativas
   Future<void> _carregarDadosUsuario() async {
     setState(() { isLoading = true; });
     final profile = await _userProfileService.getUserProfileInfo();

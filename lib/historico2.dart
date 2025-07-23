@@ -1,5 +1,4 @@
-// Este arquivo implementa a tabela de histórico.
-// Ele exibe informações como nome, material, classe, peso (kg) e valor.
+//Historico de partilha da cooeprativa
 
 import 'package:flutter/material.dart';
 import 'menu.dart';

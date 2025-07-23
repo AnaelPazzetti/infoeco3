@@ -30,7 +30,7 @@ class UserProfileService {
     }
     final userId = user.uid;
 
-    // NEW: Try to get user profile from the dedicated 'users' collection first
+    // Tenta primeiro consultar na coleção users
     final userDoc = await _firestore.collection('users').doc(userId).get();
 
     if (userDoc.exists) {
@@ -50,10 +50,8 @@ class UserProfileService {
             isAprovado: data['isAprovado'] as bool? ?? false,
             role: userRole,
           );
-        } else if (userRole == UserRole.cooperativa) {
-          // Always try to get prefeituraUid from the user doc, but if missing, migrate from Firestore
-          if (data['prefeituraUid'] == null) {
-            // Try to find the correct prefeituraUid from Firestore and update the user doc
+        } else if (userRole == UserRole.cooperativa) {          
+          if (data['prefeituraUid'] == null) {        
             final prefeiturasSnapshot = await _firestore.collection('prefeituras').get();
             for (final prefeituraDoc in prefeiturasSnapshot.docs) {
               final cooperativasSnapshot = await prefeituraDoc.reference.collection('cooperativas').get();
@@ -76,8 +74,7 @@ class UserProfileService {
                       isAprovado: data['isAprovado'] as bool? ?? false);
                 }
               }
-            }
-            // If not found, fallback
+            }            
             return UserProfileInfo(cooperativaUid: userId, role: userRole, isAprovado: data['isAprovado'] as bool? ?? false);
           }
           return UserProfileInfo(
@@ -91,22 +88,20 @@ class UserProfileService {
       }
     }
 
-    // Phase 1: Check for Cooperado role
+    // Checar por cooperado
     final prefeiturasSnapshot = await _firestore.collection('prefeituras').get();
     for (final prefeituraDoc in prefeiturasSnapshot.docs) {
       final cooperativasSnapshot = await prefeituraDoc.reference.collection('cooperativas').get();
       for (final coopDoc in cooperativasSnapshot.docs) {
         final cooperadoDoc = await coopDoc.reference.collection('cooperados').doc(userId).get();
         if (cooperadoDoc.exists) {
-          final data = cooperadoDoc.data() as Map<String, dynamic>;
-          // Check for the approval flag. If the flag doesn't exist at all,
-          // we assume this is a legacy user who is already approved.
-          // If the flag exists, we respect its value (true/false).
+          final data = cooperadoDoc.data() as Map<String, dynamic>;          
           final bool isAprovado = data.containsKey('aprovacao_cooperativa')
               ? (data['aprovacao_cooperativa'] as bool? ?? false)
-              : true; // Default to TRUE for legacy users without the flag
+              : true;          
 
-          // Also migrate this user to the new 'users' collection for future faster lookups
+
+          //Adiciona à coleção users
           await _firestore.collection('users').doc(userId).set({
             'role': UserRole.cooperado.toString().split('.').last,
             'cooperativaUid': coopDoc.id,
@@ -125,9 +120,7 @@ class UserProfileService {
       }
     }
 
-    // Phase 2: Check for Cooperativa role (if not found as Cooperado)
-    // Re-iterate or assume prefeiturasSnapshot is still valid if this logic is acceptable
-    // For simplicity, we re-iterate here. In a performance-critical app, you might optimize.
+    // Checa por cooperativa
     for (final prefeituraDoc in prefeiturasSnapshot.docs) {
       final cooperativasSnapshot = await prefeituraDoc.reference.collection('cooperativas').get();
       for (final coopDoc in cooperativasSnapshot.docs) {
@@ -141,7 +134,8 @@ class UserProfileService {
           } else {
             prefeituraUidFromDoc = prefeituraDoc.id;
           }
-          // Migrate this user
+
+          //adiciona à coleção users
           await _firestore.collection('users').doc(userId).set({
             'role': UserRole.cooperativa.toString().split('.').last,
             'prefeituraUid': prefeituraUidFromDoc,
@@ -157,17 +151,17 @@ class UserProfileService {
       }
     }
 
-    // Phase 3: Check for Prefeitura role (if not found as Cooperado or Cooperativa)
+    // Checa por prefeitura
     final docPrefeitura = await _firestore.collection('prefeituras').doc(userId).get();
     if (docPrefeitura.exists) {
-      // Migrate this user
+      // Adiciona à coleção users
       await _firestore.collection('users').doc(userId).set({
         'role': UserRole.prefeitura.toString().split('.').last,
       });
       return UserProfileInfo(role: UserRole.prefeitura, prefeituraUid: userId);
     }
 
-    // Phase 4: Unknown role
+    //Sem cargo
     return UserProfileInfo(role: UserRole.unknown);
   }
 }

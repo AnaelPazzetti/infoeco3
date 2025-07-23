@@ -1,10 +1,11 @@
+// Tela para cooperativa gerenciar a lista de materiais e valores
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
-// Tela para cooperativa gerenciar a lista de materiais e valores
+
 class Materiais2Screen extends StatefulWidget {
   final String? cooperativaUid;
   final String? prefeituraUid;

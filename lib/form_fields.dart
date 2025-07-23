@@ -1,6 +1,5 @@
 // form_fields.dart
 // Componentes reutilizáveis para campos de formulário com validação
-// Comentários em pt-br para facilitar o uso e manutenção
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,8 +27,8 @@ class CustomTextFormField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 300), // Limits max width, but allows shrinking
-      child: SizedBox( // Use SizedBox with double.infinity to make it fill the constrained width
+      constraints: const BoxConstraints(maxWidth: 300), 
+      child: SizedBox(
         width: double.infinity,
         child: TextFormField(
           controller: controller,

@@ -49,14 +49,14 @@ class _PrefeituraCState extends State<PrefeituraC> {
       });
       // Mostra mensagem de sucesso
 
-      // NEW: Save user profile to the top-level 'users' collection
+
       await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
         'role': UserRole.prefeitura.toString().split('.').last,
       });
 
       if (!mounted) return;
 
-      // Show success alert and then navigate back to the main screen
+      // Quando é finalizado o cadastro, mostra confirmação e volta para a tela inicial
       await showDialog(
         context: context,
         builder: (BuildContext dialogContext) {
@@ -66,7 +66,7 @@ class _PrefeituraCState extends State<PrefeituraC> {
             actions: <Widget>[
               TextButton(
                 child: const Text('OK'),
-                onPressed: () => Navigator.of(dialogContext).pop(), // Close the dialog
+                onPressed: () => Navigator.of(dialogContext).pop(),
               ),
             ],
           );

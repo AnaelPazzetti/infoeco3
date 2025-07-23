@@ -132,11 +132,10 @@ class _MenuState extends State<Menu> {
       );
     }
 
-    // Wrap Scaffold with PopScope to handle back button
     return PopScope(
-      canPop: false, // Prevent default pop behavior
+      canPop: false, 
       onPopInvoked: (didPop) async {
-        if (didPop) return; // If system already popped, do nothing
+        if (didPop) return; 
         final bool confirmLogout = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -153,12 +152,11 @@ class _MenuState extends State<Menu> {
               ),
             ],
           ),
-        ) ?? false; // Handle null if dialog dismissed
+        ) ?? false; 
 
         if (confirmLogout) {
-          // Perform logout actions and navigate to the initial login/home screen
+          
           await FirebaseAuth.instance.signOut();
-          // Navigate to the initial login/home screen and clear stack
           if (mounted) {
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => const MyApp()),

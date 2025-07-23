@@ -1,5 +1,4 @@
-// Este arquivo implementa a tela principal de histórico.
-// Ele utiliza a tabela de histórico para exibir os dados.
+// Este arquivo implementa a tela de histórico de partilhas do cooperado;
 
 import 'package:flutter/material.dart';
 import 'package:infoeco3/menu.dart';

@@ -10,7 +10,6 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // Importa o Firestore
 import 'package:firebase_auth/firebase_auth.dart'; // Importa o FirebaseAuth
 import 'user_profile_service.dart'; // Importa o serviço de perfil de usuário
 
-//Pagina de calendário, onde o usuário pode adicionar lembretes e visualizar os lembretes já adicionados.
 // O calendário é baseado na biblioteca table_calendar, que permite a personalização do calendário e a adição de eventos.
 // O usuário pode adicionar eventos clicando em um dia específico e preenchendo um formulário com o título e a descrição do evento.
 // Os eventos são armazenados em um mapa, onde a chave é a data do evento e o valor é uma lista de eventos para essa data.
@@ -30,7 +29,7 @@ class Calendario extends StatefulWidget {
 class _Calendario extends State<Calendario> {
   final todaysDate = DateTime.now();
   var _focusedCalendarDate = DateTime.now();
-  final _initialCalendarDate = DateTime(2000);
+  final _initialCalendarDate = DateTime(2024);
   final _lastCalendarDate = DateTime(2100);
   DateTime? selectedCalendarDate;
   final titleController = TextEditingController();

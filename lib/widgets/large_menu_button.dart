@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// A large, rounded button for use in the main menu, matching the 'Perfil' button style.
+/// A large, rounded button for use in the main menu.
 class LargeMenuButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Widget child;

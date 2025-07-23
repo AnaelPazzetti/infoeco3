@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:infoeco3/form_fields.dart'; // Import the custom form field
+import 'package:infoeco3/form_fields.dart';
 
 // Tela para troca de senha
 class TrocaSenha extends StatefulWidget {

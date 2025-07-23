@@ -1,7 +1,6 @@
 // Este arquivo implementa a tela de verificação das cooperativas para prefeituras.
 // Exibe uma tabela listando todas as cooperativas vinculadas à prefeitura autenticada.
 // Permite aprovar cooperativas (campo 'aprovacao_prefeitura' em true).
-// Código totalmente comentado em pt-br, seguindo as diretrizes do projeto.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
