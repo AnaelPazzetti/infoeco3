@@ -9,6 +9,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Importa o Firestore
 import 'package:firebase_auth/firebase_auth.dart'; // Importa o FirebaseAuth
 import 'user_profile_service.dart'; // Importa o serviço de perfil de usuário
+import 'package:intl/intl.dart';
 
 // O calendário é baseado na biblioteca table_calendar, que permite a personalização do calendário e a adição de eventos.
 // O usuário pode adicionar eventos clicando em um dia específico e preenchendo um formulário com o título e a descrição do evento.
@@ -43,12 +44,20 @@ class _Calendario extends State<Calendario> {
   String? _cooperativaUid;
   String? _prefeituraUid;
 
+  bool _localeInitialized = false;
+  TimeOfDay? _selectedTime;
+
   @override
   void initState() {
     super.initState();
     selectedCalendarDate = _focusedCalendarDate;
     mySelectedEvents = {};
-    _loadUserProfileAndEvents();
+    initializeDateFormatting('pt_BR').then((_) {
+      setState(() {
+        _localeInitialized = true;
+      });
+      _loadUserProfileAndEvents();
+    });
   }
 
   // Função utilitária para normalizar datas (apenas ano/mês/dia)
@@ -79,30 +88,35 @@ class _Calendario extends State<Calendario> {
         .doc(_cooperativaUid)
         .collection('eventos_calendario');
     eventosRef.snapshots().listen((snapshot) {
-      Map<DateTime, List<MyEvents>> eventosTemp = {};
+      Map<DateTime, List<EventoData>> eventosTemp = {};
       for (var doc in snapshot.docs) {
-        // Converte a data salva em string para DateTime e normaliza
-        DateTime data = _normalizarData(DateTime.parse(doc['data']));
+        DateTime dataCompleta = DateTime.parse(doc['data']);
+        DateTime dataChave = DateTime(dataCompleta.year, dataCompleta.month, dataCompleta.day);
         MyEvents evento = MyEvents(
           eventTitle: doc['titulo'],
           eventDescp: doc['descricao'],
         );
-        if (eventosTemp[data] == null) {
-          eventosTemp[data] = [evento];
+        EventoData eventoData = EventoData(data: dataCompleta, event: evento);
+        if (eventosTemp[dataChave] == null) {
+          eventosTemp[dataChave] = [eventoData];
         } else {
-          eventosTemp[data]!.add(evento);
+          eventosTemp[dataChave]!.add(eventoData);
         }
       }
       setState(() {
-        mySelectedEvents = eventosTemp;
+        // Salva eventos com hora/minuto completos
+        _eventosPorDia = eventosTemp;
       });
     });
   }
 
+  // Novo mapa para eventos por dia, mantendo hora/minuto
+  Map<DateTime, List<EventoData>> _eventosPorDia = {};
+
   // Adiciona evento na subcoleção correta
   Future<void> _adicionarEventoFirestore(DateTime data, MyEvents evento) async {
     if (_cooperativaUid == null || _prefeituraUid == null) return;
-    final dataNormalizada = _normalizarData(data);
+    // Salva a data completa (com hora e minuto)
     await FirebaseFirestore.instance
         .collection('prefeituras')
         .doc(_prefeituraUid)
@@ -110,67 +124,118 @@ class _Calendario extends State<Calendario> {
         .doc(_cooperativaUid)
         .collection('eventos_calendario')
         .add({
-      'data': dataNormalizada.toIso8601String(),
+      'data': data.toIso8601String(),
       'titulo': evento.eventTitle,
       'descricao': evento.eventDescp,
     });
   }
 
-  // Retorna lista de eventos para o dia normalizado
-  List<MyEvents> _listOfDayEvents(DateTime dateTime) {
+  // Retorna lista de eventos (com hora/minuto) para o dia normalizado
+  List<EventoData> _listOfDayEvents(DateTime dateTime) {
     final dataNormalizada = _normalizarData(dateTime);
-    return mySelectedEvents[dataNormalizada] ?? [];
+    return _eventosPorDia[dataNormalizada] ?? [];
   }
 
   _showAddEventDialog() async {
+    TimeOfDay selectedTime = TimeOfDay.now();
     await showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-              title: const Text('Novo lembrete'),
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  buildTextField(
-                      controller: titleController, hint: 'Insira o título'),
-                  const SizedBox(
-                    height: 20.0,
+        builder: (context) => StatefulBuilder(
+              builder: (context, setStateDialog) => AlertDialog(
+                title: const Text('Novo lembrete'),
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    buildTextField(
+                        controller: titleController, hint: 'Insira o título'),
+                    const SizedBox(
+                      height: 20.0,
+                    ),
+                    buildTextField(
+                        controller: descpController, hint: 'Insira a descrição'),
+                    const SizedBox(height: 20.0),
+                    Row(
+                      children: [
+                        const Text('Horário:'),
+                        const SizedBox(width: 10),
+                        Text(
+                          DateFormat('dd/MM/yyyy HH:mm').format(
+                            DateTime(
+                              selectedCalendarDate!.year,
+                              selectedCalendarDate!.month,
+                              selectedCalendarDate!.day,
+                              selectedTime.hour,
+                              selectedTime.minute,
+                            ),
+                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: selectedTime,
+                              builder: (context, child) {
+                                return MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setStateDialog(() {
+                                selectedTime = picked;
+                              });
+                            }
+                          },
+                          child: const Text('Selecionar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
                   ),
-                  buildTextField(
-                      controller: descpController, hint: 'Insira a descrição'),
+                  TextButton(
+                    onPressed: () async {
+                      if (titleController.text.isEmpty &&
+                          descpController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Insira o título e a descrição!'),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                        return;
+                      } else {
+                        final novoEvento = MyEvents(
+                          eventTitle: titleController.text,
+                          eventDescp: descpController.text,
+                        );
+                        // Adiciona hora e minuto à data
+                        DateTime dataComHora = DateTime(
+                          selectedCalendarDate!.year,
+                          selectedCalendarDate!.month,
+                          selectedCalendarDate!.day,
+                          selectedTime.hour,
+                          selectedTime.minute,
+                        );
+                        await _adicionarEventoFirestore(dataComHora, novoEvento); // Salva no Firestore
+                        titleController.clear();
+                        descpController.clear();
+                        Navigator.pop(context);
+                        return;
+                      }
+                    },
+                    child: const Text('Adicionar'),
+                  ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    if (titleController.text.isEmpty &&
-                        descpController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Insira o título e a descrição!'),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                      return;
-                    } else {
-                      final novoEvento = MyEvents(
-                        eventTitle: titleController.text,
-                        eventDescp: descpController.text,
-                      );
-                      await _adicionarEventoFirestore(selectedCalendarDate!, novoEvento); // Salva no Firestore
-                      titleController.clear();
-                      descpController.clear();
-                      Navigator.pop(context);
-                      return;
-                    }
-                  },
-                  child: const Text('Adicionar'),
-                ),
-              ],
             ));
   }
 
@@ -197,9 +262,10 @@ class _Calendario extends State<Calendario> {
     );
   }
 
-  // Formata a data para exibição
+  // Formata a data para exibição em português e 24h
   String _formatarData(DateTime data) {
-    return "${data.day}/${data.month}/${data.year}";
+    // Exemplo: 23 de julho de 2025, 14:30
+    return DateFormat("d 'de' MMMM 'de' y HH:mm", 'pt_BR').format(data);
   }
 
   // Retorna eventos dos próximos 15 dias a partir da data atual
@@ -218,6 +284,11 @@ class _Calendario extends State<Calendario> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_localeInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendário'),
@@ -235,7 +306,7 @@ class _Calendario extends State<Calendario> {
                 side: BorderSide(color: Colors.green, width: 2.0),
               ),
               child: TableCalendar(
-                //locale: 'pt_BR',
+                locale: 'pt_BR',
                 focusedDay: _focusedCalendarDate,
                 firstDay: _initialCalendarDate,
                 lastDay: _lastCalendarDate,
@@ -245,27 +316,29 @@ class _Calendario extends State<Calendario> {
                 daysOfWeekHeight: 40.0,
                 rowHeight: 60.0,
                 eventLoader: _listOfDayEvents,
-                headerStyle: const HeaderStyle(
+                headerStyle: HeaderStyle(
                   titleTextStyle:
-                      TextStyle(color: Colors.orange, fontSize: 20.0),
-                  decoration: BoxDecoration(
+                      const TextStyle(color: Colors.orange, fontSize: 20.0),
+                  titleTextFormatter: (date, locale) =>
+                      DateFormat.yMMMM(locale).format(date).toUpperCase(),
+                  decoration: const BoxDecoration(
                       borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(10),
                           topRight: Radius.circular(10))),
                   formatButtonTextStyle:
-                      TextStyle(color: Colors.white, fontSize: 16.0),
-                  formatButtonDecoration: BoxDecoration(
+                      const TextStyle(color: Colors.white, fontSize: 16.0),
+                  formatButtonDecoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.all(
                       Radius.circular(5.0),
                     ),
                   ),
-                  leftChevronIcon: Icon(
+                  leftChevronIcon: const Icon(
                     Icons.chevron_left,
                     color: Colors.orange,
                     size: 28,
                   ),
-                  rightChevronIcon: Icon(
+                  rightChevronIcon: const Icon(
                     Icons.chevron_right,
                     color: Colors.orange,
                     size: 28,
@@ -313,17 +386,17 @@ class _Calendario extends State<Calendario> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     ..._listOfDayEvents(selectedCalendarDate!).map(
-                      (myEvents) => ListTile(
+                      (eventoData) => ListTile(
                         leading: const Icon(
                           Icons.event,
                           color: Colors.greenAccent,
                         ),
                         title: Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Text('Título: ${myEvents.eventTitle}'),
+                          child: Text('Título: ${eventoData.event.eventTitle}'),
                         ),
                         subtitle: Text(
-                          'Descrição: ${myEvents.eventDescp}\nData: ${_formatarData(selectedCalendarDate!)}',
+                          'Descrição: ${eventoData.event.eventDescp}\nData: ${_formatarData(eventoData.data)}',
                         ),
                       ),
                     ),
@@ -342,17 +415,17 @@ class _Calendario extends State<Calendario> {
                   ),
                   ...(_listOfDayEvents(todaysDate).isNotEmpty
                       ? _listOfDayEvents(todaysDate).map(
-                          (myEvents) => ListTile(
+                          (eventoData) => ListTile(
                                 leading: const Icon(
                                   Icons.today,
                                   color: Colors.blue,
                                 ),
                                 title: Padding(
                                   padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Text('Título: ${myEvents.eventTitle}'),
+                                  child: Text('Título: ${eventoData.event.eventTitle}'),
                                 ),
                                 subtitle: Text(
-                                  'Descrição: ${myEvents.eventDescp}\nData: ${_formatarData(todaysDate)}',
+                                  'Descrição: ${eventoData.event.eventDescp}\nData: ${_formatarData(eventoData.data)}',
                                 ),
                               ))
                       : [
