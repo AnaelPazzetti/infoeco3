@@ -67,6 +67,9 @@ class _Materiais3State extends State<Materiais3> {
     setState(() => isLoading = false);
   }
 
+
+
+
   // Função para realizar a partilha parcial de um material
   Future<void> _partilhaParcial(String material) async {
     if (cooperativaUid == null) return;
@@ -211,6 +214,98 @@ class _Materiais3State extends State<Materiais3> {
     );
   }
 
+
+
+
+// Função para realizar a partilha total de todos os materiais
+  Future<void> _partilhaTotal() async {
+    if (cooperativaUid == null || prefeituraUid == null) return;
+    setState(() => isLoading = true);
+    // Busca materiais_preco
+    final doc = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .get();
+    Map<String, dynamic> materiaisPreco = {};
+    if (doc.exists && doc.data() != null && doc.data()!.containsKey('materiais_preco')) {
+      materiaisPreco = Map<String, dynamic>.from(doc['materiais_preco']);
+    }
+    // Cria documento em 'partilhas' da cooperativa
+    await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('partilhas')
+        .add({
+          'materiais_qtd': Map<String, dynamic>.from(materiaisQtd),
+          'materiais_preco': materiaisPreco,
+          'data': DateTime.now().toIso8601String(),
+        });
+    // Reseta materiais_qtd da cooperativa para 0
+    final resetMap = Map<String, dynamic>.from(materiaisQtd.map((k, v) => MapEntry(k, 0)));
+    await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .update({'materiais_qtd': resetMap});
+    // Para cada cooperado, reseta materiais_qtd e salva em subcoleção 'partilhas'
+    final cooperadosSnapshot = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('cooperados')
+        .get();
+    for (final cooperadoDoc in cooperadosSnapshot.docs) {
+      final cooperadoData = cooperadoDoc.data();
+      final materiaisQtdCooperado = Map<String, dynamic>.from(cooperadoData['materiais_qtd'] ?? {});
+      // Usa o valor da partilha já calculado e armazenado no documento do cooperado.
+      final double valorPartilhaExistente = (cooperadoData['valor_partilha'] as num? ?? 0.0).toDouble();
+      // Cria documento em 'partilhas' do cooperado
+      final partilhaRef = await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(prefeituraUid)
+          .collection('cooperativas')
+          .doc(cooperativaUid)
+          .collection('cooperados')
+          .doc(cooperadoDoc.id)
+          .collection('partilhas')
+          .add({
+            'materiais_qtd': materiaisQtdCooperado,
+            'materiais_preco': materiaisPreco,
+            'data': DateTime.now().toIso8601String(),
+            'valor_partilha': valorPartilhaExistente,
+          });
+      // Salva o UID da partilha da cooperativa no documento do cooperado
+      await partilhaRef.update({
+        'cooperativa_partilha_uid': partilhaRef.id,
+      });
+      // Reseta materiais_qtd e valor_partilha do cooperado para 0
+      final resetCoopMap = Map<String, dynamic>.from(materiaisQtdCooperado.map((k, v) => MapEntry(k, 0)));
+      await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(prefeituraUid)
+          .collection('cooperativas')
+          .doc(cooperativaUid)
+          .collection('cooperados')
+          .doc(cooperadoDoc.id)
+          .update({'materiais_qtd': resetCoopMap, 'valor_partilha': 0});
+    }
+    setState(() {
+      materiaisQtd = resetMap;
+      isLoading = false;
+    });
+    await _carregarMateriaisQtd(); // Recarrega os dados para atualizar a tabela
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Partilha total realizada e materiais resetados!')),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -289,90 +384,7 @@ class _Materiais3State extends State<Materiais3> {
               ),
             );
             if (confirm == true) {
-              // Busca materiais_preco
-              final doc = await FirebaseFirestore.instance
-                  .collection('prefeituras')
-                  .doc(prefeituraUid)
-                  .collection('cooperativas')
-                  .doc(cooperativaUid)
-                  .get();
-              Map<String, dynamic> materiaisPreco = {};
-              if (doc.exists && doc.data() != null && doc.data()!.containsKey('materiais_preco')) {
-                materiaisPreco = Map<String, dynamic>.from(doc['materiais_preco']);
-              }
-              // Cria documento em 'partilhas' da cooperativa
-              await FirebaseFirestore.instance
-                  .collection('prefeituras')
-                  .doc(prefeituraUid)
-                  .collection('cooperativas')
-                  .doc(cooperativaUid)
-                  .collection('partilhas')
-                  .add({
-                    'materiais_qtd': Map<String, dynamic>.from(materiaisQtd),
-                    'materiais_preco': materiaisPreco,
-                    'data': DateTime.now().toIso8601String(),
-                  });
-              // Reseta materiais_qtd da cooperativa para 0
-              final resetMap = Map<String, dynamic>.from(materiaisQtd.map((k, v) => MapEntry(k, 0)));
-              await FirebaseFirestore.instance
-                  .collection('prefeituras')
-                  .doc(prefeituraUid)
-                  .collection('cooperativas')
-                  .doc(cooperativaUid)
-                  .update({'materiais_qtd': resetMap});
-              // Para cada cooperado, reseta materiais_qtd e salva em subcoleção 'partilhas'
-              final cooperadosSnapshot = await FirebaseFirestore.instance
-                  .collection('prefeituras')
-                  .doc(prefeituraUid)
-                  .collection('cooperativas')
-                  .doc(cooperativaUid)
-                  .collection('cooperados')
-                  .get();
-              for (final cooperadoDoc in cooperadosSnapshot.docs) {
-                final cooperadoData = cooperadoDoc.data();
-                final materiaisQtdCooperado = Map<String, dynamic>.from(cooperadoData['materiais_qtd'] ?? {});
-                // Usa o valor da partilha já calculado e armazenado no documento do cooperado.
-                // Isso garante consistência, mesmo que os preços dos materiais tenham mudado.
-                final double valorPartilhaExistente = (cooperadoData['valor_partilha'] as num? ?? 0.0).toDouble();
-
-                // Cria documento em 'partilhas' do cooperado
-                final partilhaRef = await FirebaseFirestore.instance
-                    .collection('prefeituras')
-                    .doc(prefeituraUid)
-                    .collection('cooperativas')
-                    .doc(cooperativaUid)
-                    .collection('cooperados')
-                    .doc(cooperadoDoc.id)
-                    .collection('partilhas')
-                    .add({
-                      'materiais_qtd': materiaisQtdCooperado,
-                      'materiais_preco': materiaisPreco,
-                      'data': DateTime.now().toIso8601String(),
-                      'valor_partilha': valorPartilhaExistente,
-                    });
-                // Salva o UID da partilha da cooperativa no documento do cooperado
-                await partilhaRef.update({
-                  'cooperativa_partilha_uid': partilhaRef.id,
-                });
-                // Reseta materiais_qtd e valor_partilha do cooperado para 0
-                final resetCoopMap = Map<String, dynamic>.from(materiaisQtdCooperado.map((k, v) => MapEntry(k, 0)));
-                await FirebaseFirestore.instance
-                    .collection('prefeituras')
-                    .doc(prefeituraUid)
-                    .collection('cooperativas')
-                    .doc(cooperativaUid)
-                    .collection('cooperados')
-                    .doc(cooperadoDoc.id)
-                    .update({'materiais_qtd': resetCoopMap, 'valor_partilha': 0});
-              }
-              setState(() {
-                materiaisQtd = resetMap;
-                isLoading = false;
-              });
-              await _carregarMateriaisQtd(); // Recarrega os dados para atualizar a tabela
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Partilha total realizada e materiais resetados!')),
-              );
+              await _partilhaTotal();
             }
           },
           style: ElevatedButton.styleFrom(
@@ -387,4 +399,6 @@ class _Materiais3State extends State<Materiais3> {
       ),
     );
   }
+
+
 }
