@@ -78,69 +78,62 @@ class _HistoricoState extends State<Historico> {
         builder: (context, constraints) {
           final double tableWidth = constraints.maxWidth * 0.95;
           return SingleChildScrollView(
-            scrollDirection: Axis.vertical,
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: tableWidth),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text('Histórico de Partilhas',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('Selecionar data: '),
-                          DropdownButton<int>(
-                            value: selectedPartilhaIndex,
-                            items: [
-                              for (int i = 0; i < partilhas.length; i++)
-                                DropdownMenuItem(
-                                  value: i,
-                                  child: Text(_formatarData(partilhas[i]['data'])),
-                                ),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) setState(() => selectedPartilhaIndex = value);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Table(
-                          border: TableBorder.all(color: Colors.black),
-                          defaultColumnWidth: const FixedColumnWidth(150.0),
-                          children: [
-                            TableRow(children: [
-                              celulaHeader('Material'),
-                              celulaHeader('Preço (R\$)'),
-                              celulaHeader('Quantidade (kg)'),
-                            ]),
-                            for (final entry in materiaisQtd.entries)
-                              TableRow(children: [
-                                celula(entry.key),
-                                celula(materiaisPreco[entry.key]?.toString() ?? '-'),
-                                celula(entry.value.toString()),
-                              ]),
+            child: SizedBox(
+              width: tableWidth,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text('Histórico de Partilhas',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Selecionar data: '),
+                        DropdownButton<int>(
+                          value: selectedPartilhaIndex,
+                          items: [
+                            for (int i = 0; i < partilhas.length; i++)
+                              DropdownMenuItem(
+                                value: i,
+                                child: Text(_formatarData(partilhas[i]['data'])),
+                              ),
                           ],
+                          onChanged: (value) {
+                            if (value != null) setState(() => selectedPartilhaIndex = value);
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Valor da partilha nesta data: R\$ ${valorPartilha is num ? valorPartilha.toStringAsFixed(2) : valorPartilha}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    DataTable(
+                      columns: const [
+                        DataColumn(label: Text('Material')),
+                        DataColumn(label: Text('Preço (R\$)')),
+                        DataColumn(label: Text('Quantidade (kg)')),
+                      ],
+                      rows: [
+                        for (final entry in materiaisQtd.entries)
+                          DataRow(cells: [
+                            DataCell(Text(entry.key)),
+                            DataCell(Text(materiaisPreco[entry.key]?.toString() ?? '-')),
+                            DataCell(Text(entry.value.toString())),
+                          ]),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Valor da partilha nesta data: R\$ ${valorPartilha is num ? valorPartilha.toStringAsFixed(2) : valorPartilha}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },

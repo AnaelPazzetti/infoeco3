@@ -53,17 +53,17 @@ class _VerificarCooperativasState extends State<VerificarCooperativas> {
           ? const Center(child: Text('Usuário não autenticado.'))
           : Center(
               child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
+                scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.all(16.0),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: 800,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: Card(
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
                         child: StreamBuilder<QuerySnapshot>(
                           stream: prefeituraUid == null
                               ? null

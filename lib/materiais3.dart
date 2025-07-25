@@ -223,47 +223,43 @@ class _Materiais3State extends State<Materiais3> {
           final double tableWidth = constraints.maxWidth * 0.8;
           return Center(
             child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: tableWidth),
-                      child: Table(
-                        columnWidths: const <int, TableColumnWidth>{
-                          0: FlexColumnWidth(2.5),
-                          1: FlexColumnWidth(1.5),
-                          2: FlexColumnWidth(1.5),
-                          3: FlexColumnWidth(1.5),
-                          4: FlexColumnWidth(1.5),
-                        },
-                        border: TableBorder.all(color: Colors.black),
-                        children: [
-                          TableRow(children: [
-                            celulaHeader('Material'),
-                            celulaHeader('Quantidade (kg)'),
-                            celulaHeader('Partilha Parcial'),
-                          ]),
-                          for (final entry in materiaisQtd.entries)
-                            TableRow(children: [
-                              celula(entry.key),
-                              celula(entry.value.toString()),
-                              Center(
-                                child: IconButton(
-                                  icon: const Icon(Icons.account_balance_wallet, color: Colors.orange),
-                                  tooltip: 'Partilha parcial',
-                                  onPressed: viewOnly ? null : () async {
-                                    await _partilhaParcial(entry.key);
-                                  },
-                                ),
-                              ),
-                            ]),
-                        ],
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: tableWidth),
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Quantidade (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Partilha Parcial', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: [
+                            for (final entry in materiaisQtd.entries)
+                              DataRow(cells: [
+                                DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
+                                DataCell(Text(entry.value.toString(), style: const TextStyle(fontSize: 16))),
+                                DataCell(Center(
+                                  child: IconButton(
+                                    icon: const Icon(Icons.account_balance_wallet, color: Colors.orange),
+                                    tooltip: 'Partilha parcial',
+                                    onPressed: viewOnly ? null : () async {
+                                      await _partilhaParcial(entry.key);
+                                    },
+                                  ),
+                                )),
+                              ]),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

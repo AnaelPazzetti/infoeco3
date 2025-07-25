@@ -161,226 +161,205 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
                           return eb.compareTo(ea);
                         });
                         final limitedDocs = _limiteHistorico == -1 ? docs : docs.take(_limiteHistorico).toList();
-                        List<TableRow> linhas = [
-                          TableRow(children: [
-                            celulaHeader('NOME'),
-                            celulaHeader('DATA'),
-                            celulaHeader('ENTRADA'),
-                            celulaHeader('SAÍDA'),
-                            celulaHeader('HORAS TRABALHADAS'),
-                            celulaHeader('APROVADO'),
-                            celulaHeader('AÇÃO'),
-                          ]),
-                        ];
-                        for (var doc in limitedDocs) {
-                          final data = doc['data'] ?? '';
-                          final entradaHist = doc['entrada'] != null ? _formatarHora(doc['entrada']) : '-';
-                          final saidaHist = doc['saida'] != null ? _formatarHora(doc['saida']) : '-';
-                          final horas = doc['horas_trabalhadas'] ?? '-';
-                          final aprovado = (doc.data() as Map<String, dynamic>).containsKey('aprovado pelo presidente') && doc['aprovado pelo presidente'] == true ? 'Sim' : 'Não';
-                          List<Widget> cells = [
-                            celula(doc['nome'] ?? ''),
-                            celula(data),
-                            celula(entradaHist),
-                            celula(saidaHist),
-                            celula(horas),
-                            celula(aprovado),
-                          ];
-                          // Botões de ação: aprovar, editar, excluir
-                          cells.add(
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 2.0),
-                              child: Wrap(
-                                alignment: WrapAlignment.center,
-                                spacing: 4,
-                                runSpacing: 2,
-                                children: [
-                                  if (aprovado == 'Não')
-                                    SizedBox(
-                                      width: 36,
-                                      height: 36,
-                                      child: ElevatedButton(
-                                        onPressed: viewOnly ? null : () async {
-                                          await FirebaseFirestore.instance
-                                              .collection('prefeituras')
-                                              .doc(prefeituraUid)
-                                              .collection('cooperativas')
-                                              .doc(cooperativaUid)
-                                              .collection('presencas')
-                                              .doc(doc.id)
-                                              .update({'aprovado pelo presidente': true});
-                                          setState(() {});
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.green,
-                                          padding: EdgeInsets.zero,
-                                          shape: const CircleBorder(),
-                                        ),
-                                        child: const Icon(Icons.check, color: Colors.white, size: 18),
-                                      ),
-                                    ),
-                                  SizedBox(
-                                    width: 36,
-                                    height: 36,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                      tooltip: 'Editar Entrada/Saída',
-                                      onPressed: viewOnly ? null : () async {
-                                        DateTime? novaEntrada = doc['entrada'] != null ? DateTime.tryParse(doc['entrada']) : null;
-                                        DateTime? novaSaida = doc['saida'] != null ? DateTime.tryParse(doc['saida']) : null;
-                                        await showDialog(
-                                          context: context,
-                                          builder: (context) {
-                                            DateTime? tempEntrada = novaEntrada;
-                                            DateTime? tempSaida = novaSaida;
-                                            return AlertDialog(
-                                              title: const Text('Editar Entrada/Saída'),
-                                              content: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  ListTile(
-                                                    title: const Text('Entrada'),
-                                                    subtitle: Text(tempEntrada != null ? tempEntrada.toString() : '-'),
-                                                    trailing: IconButton(
-                                                      icon: const Icon(Icons.edit),
-                                                      onPressed: () async {
-                                                        final picked = await showDatePicker(
-                                                          context: context,
-                                                          initialDate: tempEntrada ?? DateTime.now(),
-                                                          firstDate: DateTime(2020),
-                                                          lastDate: DateTime(2100),
-                                                        );
-                                                        if (picked != null) {
-                                                          final pickedTime = await showTimePicker(
-                                                            context: context,
-                                                            initialTime: TimeOfDay.fromDateTime(tempEntrada ?? DateTime.now()),
-                                                          );
-                                                          if (pickedTime != null) {
-                                                            setState(() {
-                                                              tempEntrada = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
-                                                            });
-                                                          }
-                                                        }
-                                                      },
-                                                    ),
-                                                  ),
-                                                  ListTile(
-                                                    title: const Text('Saída'),
-                                                    subtitle: Text(tempSaida != null ? tempSaida.toString() : '-'),
-                                                    trailing: IconButton(
-                                                      icon: const Icon(Icons.edit),
-                                                      onPressed: () async {
-                                                        final picked = await showDatePicker(
-                                                          context: context,
-                                                          initialDate: tempSaida ?? DateTime.now(),
-                                                          firstDate: DateTime(2020),
-                                                          lastDate: DateTime(2100),
-                                                        );
-                                                        if (picked != null) {
-                                                          final pickedTime = await showTimePicker(
-                                                            context: context,
-                                                            initialTime: TimeOfDay.fromDateTime(tempSaida ?? DateTime.now()),
-                                                          );
-                                                          if (pickedTime != null) {
-                                                            setState(() {
-                                                              tempSaida = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
-                                                            });
-                                                          }
-                                                        }
-                                                      },
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  child: const Text('Cancelar'),
-                                                  onPressed: () => Navigator.of(context).pop(),
-                                                ),
-                                                ElevatedButton(
-                                                  child: const Text('Salvar'),
-                                                  onPressed: () async {
-                                                    // Atualiza entrada/saida e recalcula horas_trabalhadas
-                                                    await FirebaseFirestore.instance
-                                                        .collection('prefeituras')
-                                                        .doc(prefeituraUid)
-                                                        .collection('cooperativas')
-                                                        .doc(cooperativaUid)
-                                                        .collection('presencas')
-                                                        .doc(doc.id)
-                                                        .update({
-                                                      'entrada': tempEntrada?.toIso8601String(),
-                                                      'saida': tempSaida?.toIso8601String(),
-                                                      'horas_trabalhadas': (tempEntrada != null && tempSaida != null)
-                                                          ? _formatarDuracaoCompleta(tempSaida!.difference(tempEntrada!).toString().split('.').first)
-                                                          : null,
-                                                    });
-                                                    Navigator.of(context).pop();
-                                                    setState(() {});
-                                                  },
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 36,
-                                    height: 36,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                      tooltip: 'Excluir presença',
-                                      onPressed: viewOnly ? null : () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Excluir presença'),
-                                            content: const Text('Tem certeza que deseja excluir este registro?'),
-                                            actions: [
-                                              TextButton(
-                                                child: const Text('Cancelar'),
-                                                onPressed: () => Navigator.of(context).pop(false),
-                                              ),
-                                              ElevatedButton(
-                                                child: const Text('Excluir'),
-                                                onPressed: () => Navigator.of(context).pop(true),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirm == true) {
-                                          await FirebaseFirestore.instance
-                                              .collection('prefeituras')
-                                              .doc(prefeituraUid)
-                                              .collection('cooperativas')
-                                              .doc(cooperativaUid)
-                                              .collection('presencas')
-                                              .doc(doc.id)
-                                              .delete();
-                                          setState(() {});
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                          linhas.add(TableRow(children: cells));
-                        }
                         return Center(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: ConstrainedBox(
-                              constraints: BoxConstraints(minWidth: 900), // Ensures table is always wide enough for all columns
-                              child: Table(
-                                defaultColumnWidth: const FixedColumnWidth(140.0),
-                                border: TableBorder.all(
-                                  color: Colors.black,
-                                ),
-                                children: linhas,
+                              constraints: BoxConstraints(minWidth: 900),
+                              child: DataTable(
+                                columns: const [
+                                  DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('DATA', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('ENTRADA', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('SAÍDA', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('HORAS TRABALHADAS', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('APROVADO', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('AÇÃO', style: TextStyle(fontWeight: FontWeight.bold))),
+                                ],
+                                rows: [
+                                  for (var doc in limitedDocs)
+                                    DataRow(cells: [
+                                      DataCell(Text(doc['nome'] ?? '', style: const TextStyle(fontSize: 16))),
+                                      DataCell(Text(doc['data'] ?? '', style: const TextStyle(fontSize: 16))),
+                                      DataCell(Text(doc['entrada'] != null ? _formatarHora(doc['entrada']) : '-', style: const TextStyle(fontSize: 16))),
+                                      DataCell(Text(doc['saida'] != null ? _formatarHora(doc['saida']) : '-', style: const TextStyle(fontSize: 16))),
+                                      DataCell(Text(doc['horas_trabalhadas'] ?? '-', style: const TextStyle(fontSize: 16))),
+                                      DataCell(Text((doc.data() as Map<String, dynamic>).containsKey('aprovado pelo presidente') && doc['aprovado pelo presidente'] == true ? 'Sim' : 'Não', style: const TextStyle(fontSize: 16))),
+                                      DataCell(Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          if ((doc.data() as Map<String, dynamic>).containsKey('aprovado pelo presidente') && doc['aprovado pelo presidente'] != true)
+                                            SizedBox(
+                                              width: 36,
+                                              height: 36,
+                                              child: ElevatedButton(
+                                                onPressed: viewOnly ? null : () async {
+                                                  await FirebaseFirestore.instance
+                                                      .collection('prefeituras')
+                                                      .doc(prefeituraUid)
+                                                      .collection('cooperativas')
+                                                      .doc(cooperativaUid)
+                                                      .collection('presencas')
+                                                      .doc(doc.id)
+                                                      .update({'aprovado pelo presidente': true});
+                                                  setState(() {});
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green,
+                                                  padding: EdgeInsets.zero,
+                                                  shape: const CircleBorder(),
+                                                ),
+                                                child: const Icon(Icons.check, color: Colors.white, size: 18),
+                                              ),
+                                            ),
+                                          SizedBox(
+                                            width: 36,
+                                            height: 36,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                              tooltip: 'Editar Entrada/Saída',
+                                              onPressed: viewOnly ? null : () async {
+                                                DateTime? novaEntrada = doc['entrada'] != null ? DateTime.tryParse(doc['entrada']) : null;
+                                                DateTime? novaSaida = doc['saida'] != null ? DateTime.tryParse(doc['saida']) : null;
+                                                await showDialog(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    DateTime? tempEntrada = novaEntrada;
+                                                    DateTime? tempSaida = novaSaida;
+                                                    return AlertDialog(
+                                                      title: const Text('Editar Entrada/Saída'),
+                                                      content: Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          ListTile(
+                                                            title: const Text('Entrada'),
+                                                            subtitle: Text(tempEntrada != null ? tempEntrada.toString() : '-'),
+                                                            trailing: IconButton(
+                                                              icon: const Icon(Icons.edit),
+                                                              onPressed: () async {
+                                                                final picked = await showDatePicker(
+                                                                  context: context,
+                                                                  initialDate: tempEntrada ?? DateTime.now(),
+                                                                  firstDate: DateTime(2020),
+                                                                  lastDate: DateTime(2100),
+                                                                );
+                                                                if (picked != null) {
+                                                                  final pickedTime = await showTimePicker(
+                                                                    context: context,
+                                                                    initialTime: TimeOfDay.fromDateTime(tempEntrada ?? DateTime.now()),
+                                                                  );
+                                                                  if (pickedTime != null) {
+                                                                    setState(() {
+                                                                      tempEntrada = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+                                                                    });
+                                                                  }
+                                                                }
+                                                              },
+                                                            ),
+                                                          ),
+                                                          ListTile(
+                                                            title: const Text('Saída'),
+                                                            subtitle: Text(tempSaida != null ? tempSaida.toString() : '-'),
+                                                            trailing: IconButton(
+                                                              icon: const Icon(Icons.edit),
+                                                              onPressed: () async {
+                                                                final picked = await showDatePicker(
+                                                                  context: context,
+                                                                  initialDate: tempSaida ?? DateTime.now(),
+                                                                  firstDate: DateTime(2020),
+                                                                  lastDate: DateTime(2100),
+                                                                );
+                                                                if (picked != null) {
+                                                                  final pickedTime = await showTimePicker(
+                                                                    context: context,
+                                                                    initialTime: TimeOfDay.fromDateTime(tempSaida ?? DateTime.now()),
+                                                                  );
+                                                                  if (pickedTime != null) {
+                                                                    setState(() {
+                                                                      tempSaida = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+                                                                    });
+                                                                  }
+                                                                }
+                                                              },
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          child: const Text('Cancelar'),
+                                                          onPressed: () => Navigator.of(context).pop(),
+                                                        ),
+                                                        ElevatedButton(
+                                                          child: const Text('Salvar'),
+                                                          onPressed: () async {
+                                                            await FirebaseFirestore.instance
+                                                                .collection('prefeituras')
+                                                                .doc(prefeituraUid)
+                                                                .collection('cooperativas')
+                                                                .doc(cooperativaUid)
+                                                                .collection('presencas')
+                                                                .doc(doc.id)
+                                                                .update({
+                                                              'entrada': tempEntrada?.toIso8601String(),
+                                                              'saida': tempSaida?.toIso8601String(),
+                                                              'horas_trabalhadas': (tempEntrada != null && tempSaida != null)
+                                                                  ? _formatarDuracaoCompleta(tempSaida!.difference(tempEntrada!).toString().split('.').first)
+                                                                  : null,
+                                                            });
+                                                            Navigator.of(context).pop();
+                                                            setState(() {});
+                                                          },
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            width: 36,
+                                            height: 36,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                              tooltip: 'Excluir presença',
+                                              onPressed: viewOnly ? null : () async {
+                                                final confirm = await showDialog<bool>(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: const Text('Excluir presença'),
+                                                    content: const Text('Tem certeza que deseja excluir este registro?'),
+                                                    actions: [
+                                                      TextButton(
+                                                        child: const Text('Cancelar'),
+                                                        onPressed: () => Navigator.of(context).pop(false),
+                                                      ),
+                                                      ElevatedButton(
+                                                        child: const Text('Excluir'),
+                                                        onPressed: () => Navigator.of(context).pop(true),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                                if (confirm == true) {
+                                                  await FirebaseFirestore.instance
+                                                      .collection('prefeituras')
+                                                      .doc(prefeituraUid)
+                                                      .collection('cooperativas')
+                                                      .doc(cooperativaUid)
+                                                      .collection('presencas')
+                                                      .doc(doc.id)
+                                                      .delete();
+                                                  setState(() {});
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      )),
+                                    ]),
+                                ],
                               ),
                             ),
                           ),

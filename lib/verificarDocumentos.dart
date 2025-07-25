@@ -274,105 +274,84 @@ class _VerificarDocumentosState extends State<VerificarDocumentos> {
           final double tableWidth = constraints.maxWidth * 0.8;
           return Center(
             child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: tableWidth),
-                      child: Table(
-                        columnWidths: const <int, TableColumnWidth>{
-                          0: FlexColumnWidth(2.5),
-                          1: FlexColumnWidth(1.5),
-                          2: FlexColumnWidth(1.5),
-                          3: FlexColumnWidth(1.5),
-                        },
-                        border: TableBorder.all(color: Colors.black),
-                        children: [
-                          TableRow(children: [
-                            celulaHeader('Documento'),
-                            celulaHeader('Data de Upload'),
-                            celulaHeader('Tipo'),
-                            celulaHeader('Ações'),
-                          ]),
-                          for (final item in _displayItems)
-                            TableRow(children: [
-                              // Documento (icon + name)
-                              Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: Row(
-                                  children: [
-                                    Icon(item.isFolder ? Icons.folder : Icons.insert_drive_file, size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        item.name,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ),
-                                  ],
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: tableWidth,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: DataTable(
+                    columns: [
+                      DataColumn(label: celulaHeader('Documento')),
+                      DataColumn(label: celulaHeader('Data de Upload')),
+                      DataColumn(label: celulaHeader('Tipo')),
+                      DataColumn(label: celulaHeader('Ações')),
+                    ],
+                    rows: _displayItems.map((item) {
+                      return DataRow(cells: [
+                        // Documento (icon + name)
+                        DataCell(Row(
+                          children: [
+                            Icon(item.isFolder ? Icons.folder : Icons.insert_drive_file, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item.name,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        )),
+                        // Data de Upload (only for files)
+                        DataCell(item.isFolder
+                          ? const Text('-', style: TextStyle(fontSize: 14))
+                          : FutureBuilder<FullMetadata>(
+                              future: (item as FileItem).ref.getMetadata(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const SizedBox(width: 24, height: 16, child: CircularProgressIndicator(strokeWidth: 2));
+                                }
+                                if (snapshot.hasData && snapshot.data?.timeCreated != null) {
+                                  final dt = snapshot.data!.timeCreated!;
+                                  final formatted = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+                                  return Text(formatted, style: const TextStyle(fontSize: 14));
+                                }
+                                return const Text('-', style: TextStyle(fontSize: 14));
+                              },
+                            ),
+                        ),
+                        // Tipo (extension or Pasta)
+                        DataCell(Text(
+                          item.isFolder
+                            ? 'Pasta'
+                            : (item.name.contains('.') ? '.${item.name.split('.').last}' : 'Arquivo'),
+                          style: const TextStyle(fontSize: 14),
+                        )),
+                        // Ações
+                        DataCell(item.isFolder
+                          ? ElevatedButton(
+                              onPressed: () => _handleItemTap(item),
+                              child: const Text('Abrir'),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.download),
+                                  onPressed: () => _handleItemTap(item),
+                                  tooltip: 'Baixar',
                                 ),
-                              ),
-                              // Data de Upload (only for files)
-                              Center(
-                                child: item.isFolder
-                                    ? const Text('-', style: TextStyle(fontSize: 14))
-                                    : FutureBuilder<FullMetadata>(
-                                        future: (item as FileItem).ref.getMetadata(),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.connectionState == ConnectionState.waiting) {
-                                            return const SizedBox(width: 24, height: 16, child: CircularProgressIndicator(strokeWidth: 2));
-                                          }
-                                          if (snapshot.hasData && snapshot.data?.timeCreated != null) {
-                                            final dt = snapshot.data!.timeCreated!;
-                                            final formatted = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-                                            return Text(formatted, style: const TextStyle(fontSize: 14));
-                                          }
-                                          return const Text('-', style: TextStyle(fontSize: 14));
-                                        },
-                                      ),
-                              ),
-                              // Tipo (extension or Pasta)
-                              Center(
-                                child: Text(
-                                  item.isFolder
-                                    ? 'Pasta'
-                                    : (item.name.contains('.') ? '.${item.name.split('.').last}' : 'Arquivo'),
-                                  style: const TextStyle(fontSize: 14),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _confirmDeleteFile(item),
+                                  tooltip: 'Excluir',
                                 ),
-                              ),
-                              // Ações
-                              Center(
-                                child: item.isFolder
-                                    ? ElevatedButton(
-                                        onPressed: () => _handleItemTap(item),
-                                        child: const Text('Abrir'),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.download),
-                                            onPressed: () => _handleItemTap(item),
-                                            tooltip: 'Baixar',
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.red),
-                                            onPressed: () => _confirmDeleteFile(item),
-                                            tooltip: 'Excluir',
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            ]),
-                        ],
-                      ),
-                    ),
-                    // ...existing code...
-                  ],
+                              ],
+                            ),
+                        ),
+                      ]);
+                    }).toList(),
+                  ),
                 ),
               ),
             ),

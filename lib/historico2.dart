@@ -35,40 +35,28 @@ class _WidgetTable extends State<WidgetTable> {
         builder: (context, constraints) {
           final double tableWidth = constraints.maxWidth * 0.9;
           return SingleChildScrollView(
-            scrollDirection: Axis.vertical,
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: tableWidth),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Table(
-                          columnWidths: const <int, TableColumnWidth>{
-                            0: FixedColumnWidth(150.0),
-                            1: FixedColumnWidth(150.0),
-                            2: FixedColumnWidth(150.0),
-                          },
-                          border: TableBorder.all(color: Colors.black),
-                          children: [
-                            TableRow(children: [
-                              celulaHeader('Data'),
-                              celulaHeader('Evento'),
-                              celulaHeader('Valor'),
-                            ]),
-                            // ...adicione as linhas da tabela aqui...
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+            child: SizedBox(
+              width: tableWidth,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: DataTable(
+                  columns: [
+                    DataColumn(label: celulaHeader('Data')),
+                    DataColumn(label: celulaHeader('Evento')),
+                    DataColumn(label: celulaHeader('Valor')),
+                  ],
+                  rows: const [
+                    // Adicione as linhas da tabela aqui, exemplo:
+                    // DataRow(cells: [
+                    //   DataCell(Text('01/01/2025')),
+                    //   DataCell(Text('Partilha')),
+                    //   DataCell(Text('R$ 100,00')),
+                    // ]),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },

@@ -74,11 +74,11 @@ class _VerificarCooperadosState extends State<VerificarCooperados> {
                 final double tableWidth = constraints.maxWidth * 0.95;
                 return Center(
                   child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: tableWidth),
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: tableWidth,
                       child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
+                        scrollDirection: Axis.vertical,
                         child: StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance
                               .collection('prefeituras')

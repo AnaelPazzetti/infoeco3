@@ -225,37 +225,26 @@ class _WidgetTable extends State<WidgetTable> {
               return eb.compareTo(ea);
             });
             final limitedDocs = _limiteHistorico == -1 ? docs : docs.take(_limiteHistorico).toList();
-            List<TableRow> linhas = [
-              TableRow(children: [
-                celulaHeader('NOME'),
-                celulaHeader('DATA'),
-                celulaHeader('ENTRADA'),
-                celulaHeader('SAÍDA'),
-                celulaHeader('HORAS TRABALHADAS'),
-              ]),
-            ];
-            for (var doc in limitedDocs) {
-              final data = doc['data'] ?? '';
-              final entradaHist = doc['entrada'] != null ? _formatarHora(DateTime.parse(doc['entrada'])) : '-';
-              final saidaHist = doc['saida'] != null ? _formatarHora(DateTime.parse(doc['saida'])) : '-';
-              final horas = doc['horas_trabalhadas'] ?? '-';
-              // Remove colunas de aprovado e ações para cooperado
-              linhas.add(TableRow(children: [
-                celula(doc['nome'] ?? ''),
-                celula(data),
-                celula(entradaHist),
-                celula(saidaHist),
-                celula(horas),
-              ]));
-            }
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Table(
-                defaultColumnWidth: const FixedColumnWidth(120.0),
-                border: TableBorder.all(
-                  color: Colors.black,
-                ),
-                children: linhas,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('DATA', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('ENTRADA', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('SAÍDA', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('HORAS TRABALHADAS', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                rows: [
+                  for (var doc in limitedDocs)
+                    DataRow(cells: [
+                      DataCell(Text(doc['nome'] ?? '')),
+                      DataCell(Text(doc['data'] ?? '')),
+                      DataCell(Text(doc['entrada'] != null ? _formatarHora(DateTime.parse(doc['entrada'])) : '-')),
+                      DataCell(Text(doc['saida'] != null ? _formatarHora(DateTime.parse(doc['saida'])) : '-')),
+                      DataCell(Text(doc['horas_trabalhadas'] ?? '-')),
+                    ]),
+                ],
               ),
             );
           },
@@ -278,26 +267,19 @@ class _WidgetTable extends State<WidgetTable> {
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 600),
-              child: Table(
-                columnWidths: const <int, TableColumnWidth>{
-                  0: FlexColumnWidth(2.5),
-                  1: FlexColumnWidth(1.5),
-                  2: FlexColumnWidth(1.5),
-                  3: FlexColumnWidth(1.5),
-                },
-                border: TableBorder.all(color: Colors.grey[300]!),
-                children: [
-                  TableRow(children: [
-                    celulaHeader('NOME'),
-                    celulaHeader('DATA'),
-                    celulaHeader('ENTRADA'),
-                    celulaHeader('SAÍDA'),
-                    celulaHeader('HORAS TRABALHADAS'),
-                  ]),
-                  TableRow(children: [
-                    celula(nomeCooperado ?? ''),
-                    celula(_formatarData(DateTime.now())),
-                    celula(
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('DATA', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('ENTRADA', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('SAÍDA', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('HORAS TRABALHADAS', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                rows: [
+                  DataRow(cells: [
+                    DataCell(Text(nomeCooperado ?? '')),
+                    DataCell(Text(_formatarData(DateTime.now()))),
+                    DataCell(
                       entrada == null
                           ? ElevatedButton(
                               onPressed: () => _registrarPresenca(isEntrada: true),
@@ -310,7 +292,7 @@ class _WidgetTable extends State<WidgetTable> {
                             )
                           : Text(_formatarHora(entrada!)),
                     ),
-                    celula(
+                    DataCell(
                       entrada != null && saida == null
                           ? ElevatedButton(
                               onPressed: () => _registrarPresenca(isEntrada: false),
@@ -323,7 +305,7 @@ class _WidgetTable extends State<WidgetTable> {
                             )
                           : (saida != null ? Text(_formatarHora(saida!)) : const Text('-')),
                     ),
-                    celula(
+                    DataCell(
                       (entrada != null && saida != null && horasTrabalhadas != null)
                           ? Text(_formatarDuracaoCompleta(horasTrabalhadas!))
                           : const Text('-'),

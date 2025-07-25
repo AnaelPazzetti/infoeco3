@@ -160,53 +160,33 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
           final double tableWidth = constraints.maxWidth * 0.8;
           return Center(
             child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: tableWidth),
-                      child: Table(
-                        columnWidths: const <int, TableColumnWidth>{
-                          0: FlexColumnWidth(2.5),
-                          1: FlexColumnWidth(1.5),
-                          2: FlexColumnWidth(1.5),
-                          3: FlexColumnWidth(1.5),
-                          4: FlexColumnWidth(1.5),
-                        },
-                        border: TableBorder.all(color: Colors.black),
-                        children: [
-                          TableRow(children: [
-                            celulaHeader('Material'),
-                            celulaHeader('Valor/kg'),
-                            celulaHeader('Quantidade'),
-                            celulaHeader('Valor'),
-                            celulaHeader('Enviar'),
-                          ]),
-                          // Exibe os materiais em ordem alfabética
-                          for (final entry in (materiaisPreco.entries.toList()..sort((a, b) => a.key.compareTo(b.key))))
-                            TableRow(children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(entry.key, style: const TextStyle(fontSize: 16)),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(entry.value.toStringAsFixed(2), style: const TextStyle(fontSize: 16)),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text((materiaisQtd[entry.key] ?? 0).toString(), style: const TextStyle(fontSize: 16)),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text((entry.value * (materiaisQtd[entry.key] ?? 0)).toStringAsFixed(2), style: const TextStyle(fontSize: 16)),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: Row(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: tableWidth),
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Valor/kg', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Quantidade', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Valor', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Ações', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: [
+                            for (final entry in (materiaisPreco.entries.toList()..sort((a, b) => a.key.compareTo(b.key))))
+                              DataRow(cells: [
+                                DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
+                                DataCell(Text(entry.value.toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
+                                DataCell(Text((materiaisQtd[entry.key] ?? 0).toString(), style: const TextStyle(fontSize: 16))),
+                                DataCell(Text((entry.value * (materiaisQtd[entry.key] ?? 0)).toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
+                                DataCell(Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     IconButton(
@@ -315,52 +295,52 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
                                             },
                                     ),
                                   ],
+                                )),
+                              ]),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      if (!viewOnly) ...{
+                        const Text('Adicionar novo material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 200,
+                              child: TextField(
+                                controller: _nomeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nome do material',
+                                  border: OutlineInputBorder(),
                                 ),
                               ),
-                            ]),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    if (!viewOnly) ...{
-                      const Text('Adicionar novo material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 200,
-                            child: TextField(
-                              controller: _nomeController,
-                              decoration: const InputDecoration(
-                                labelText: 'Nome do material',
-                                border: OutlineInputBorder(),
+                            ),
+                            const SizedBox(width: 16),
+                            SizedBox(
+                              width: 120,
+                              child: TextField(
+                                controller: _valorController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Valor/kg',
+                                  border: OutlineInputBorder(),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          SizedBox(
-                            width: 120,
-                            child: TextField(
-                              controller: _valorController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Valor/kg',
-                                border: OutlineInputBorder(),
-                              ),
+                            const SizedBox(width: 16),
+                            ElevatedButton(
+                              onPressed: _adicionarMaterial,
+                              child: const Text('Adicionar'),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: _adicionarMaterial,
-                            child: const Text('Adicionar'),
-                          ),
-                        ],
-                      ),
-                    } else ...{
-                      const Text('Modo somente leitura', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                    },
-                  ],
+                          ],
+                        ),
+                      } else ...{
+                        const Text('Modo somente leitura', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
+                      },
+                    ],
+                  ),
                 ),
               ),
             ),

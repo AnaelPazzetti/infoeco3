@@ -221,134 +221,130 @@ class _MateriaisState extends State<Materiais> {
       appBar: AppBar(title: const Text('Materiais')),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.8; 
+          final double tableWidth = constraints.maxWidth * 0.8;
           return Center(
             child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: tableWidth),
-                      child: Table(  
-                        columnWidths: const <int, TableColumnWidth>{
-                          0: FlexColumnWidth(2.5), // Material (Dropdown)
-                          1: FlexColumnWidth(1.5), // Valor/kg
-                          2: FlexColumnWidth(1.5), // Quantidade
-                          3: FlexColumnWidth(1.5), // Valor
-                          4: FlexColumnWidth(1.5), // Enviar
-                        },
-                        border: TableBorder.all(color: Colors.black),
-                        children: [
-                          TableRow(children: [
-                            celulaHeader('Material'),
-                            celulaHeader('Valor/kg'),
-                            celulaHeader('Quantidade'),
-                            celulaHeader('Valor'),
-                            celulaHeader('Enviar'),
-                          ]),
-                          for (int i = 0; i < materiaisRows.length; i++)
-                            TableRow(children: [
-                              // Dropdown de materiais
-                              Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: Row(
-                                  children: [
-                                    Flexible(
-                                      child: DropdownButton<String>(
-                                        value: materiaisRows[i].nome,
-                                        isExpanded: true,
-                                        // Mostra o texto completo do material no menu
-                                        items: materiaisPreco.keys.map((nome) {
-                                          return DropdownMenuItem(
-                                            value: nome,
-                                            child: Tooltip(
-                                              message: nome,
-                                              child: Text(
-                                                nome,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                maxLines: 1,
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                        selectedItemBuilder: (context) {
-                                          return materiaisPreco.keys.map((nome) {
-                                            return Tooltip(
-                                              message: nome,
-                                              child: Text(
-                                                nome,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                maxLines: 1,
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: tableWidth),
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Valor/kg', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Quantidade', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Valor', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Enviar', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: [
+                            for (int i = 0; i < materiaisRows.length; i++)
+                              DataRow(cells: [
+                                // Dropdown de materiais
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: DropdownButton<String>(
+                                          value: materiaisRows[i].nome,
+                                          isExpanded: true,
+                                          items: materiaisPreco.keys.map((nome) {
+                                            return DropdownMenuItem(
+                                              value: nome,
+                                              child: Tooltip(
+                                                message: nome,
+                                                child: Text(
+                                                  nome,
+                                                  overflow: TextOverflow.visible,
+                                                  softWrap: false,
+                                                  maxLines: 1,
+                                                ),
                                               ),
                                             );
-                                          }).toList();
-                                        },
-                                        onChanged: viewOnly
-                                            ? null
-                                            : (value) {
-                                                if (value != null) {
-                                                  setState(() {
-                                                    materiaisRows[i].nome = value;
-                                                  });
-                                                }
-                                              },
+                                          }).toList(),
+                                          selectedItemBuilder: (context) {
+                                            return materiaisPreco.keys.map((nome) {
+                                              return Tooltip(
+                                                message: nome,
+                                                child: Text(
+                                                  nome,
+                                                  overflow: TextOverflow.visible,
+                                                  softWrap: false,
+                                                  maxLines: 1,
+                                                ),
+                                              );
+                                            }).toList();
+                                          },
+                                          onChanged: viewOnly
+                                              ? null
+                                              : (value) {
+                                                  if (value != null) {
+                                                    setState(() {
+                                                      materiaisRows[i].nome = value;
+                                                    });
+                                                  }
+                                                },
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Valor/kg
-                              Center(child: Text((materiaisPreco[materiaisRows[i].nome] ?? 0).toStringAsFixed(2))),
-                              // Quantidade
-                              Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: TextFormField(
-                                  initialValue: materiaisRows[i].quantidade == 0 ? '' : materiaisRows[i].quantidade.toString(),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: viewOnly
-                                      ? null
-                                      : (value) {
-                                          setState(() {
-                                            materiaisRows[i].quantidade = double.tryParse(value) ?? 0;
-                                          });
-                                        },
-                                  enabled: !viewOnly,
-                                  decoration: const InputDecoration(
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              // Valor calculado
-                              Center(child: Text(_calcularValor(materiaisRows[i].nome, materiaisRows[i].quantidade).toStringAsFixed(2))),
-                              // Botão Enviar
-                              Center(
-                                child: ElevatedButton(
-                                  onPressed: viewOnly ? null : () => _enviarDadosMaterial(i),
-                                  child: const Text('Enviar'),
+                                // Valor/kg
+                                DataCell(Text((materiaisPreco[materiaisRows[i].nome] ?? 0).toStringAsFixed(2))),
+                                // Quantidade
+                                DataCell(
+                                  SizedBox(
+                                    width: 80,
+                                    child: TextFormField(
+                                      initialValue: materiaisRows[i].quantidade == 0 ? '' : materiaisRows[i].quantidade.toString(),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: viewOnly
+                                          ? null
+                                          : (value) {
+                                              setState(() {
+                                                materiaisRows[i].quantidade = double.tryParse(value) ?? 0;
+                                              });
+                                            },
+                                      enabled: !viewOnly,
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ]),
-                        ],
+                                // Valor calculado
+                                DataCell(Text(_calcularValor(materiaisRows[i].nome, materiaisRows[i].quantidade).toStringAsFixed(2))),
+                                // Botão Enviar
+                                DataCell(
+                                  ElevatedButton(
+                                    onPressed: viewOnly ? null : () => _enviarDadosMaterial(i),
+                                    child: const Text('Enviar'),
+                                  ),
+                                ),
+                              ]),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => Materiais4()),
-                        );
-                      },
-                      icon: const Icon(Icons.search),
-                      label: const Text('Conferir materiais coletados'),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => Materiais4()),
+                          );
+                        },
+                        icon: const Icon(Icons.search),
+                        label: const Text('Conferir materiais coletados'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
