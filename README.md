@@ -1,5 +1,5 @@
 # InfoEco - Cooperative Management App
-Infoeco is an app built by IFRS students enrolled as interns in the extension project "Creation of an organizational app for waste pickers cooperatives."
+Infoeco is an app built by IFRS-Erechim students enrolled as interns in the extension project "Creation of an organizational app for waste pickers cooperatives."
 
 InfoEco is a comprehensive Flutter application designed to manage the operations of recycling cooperatives. It provides a platform for communication and data management between City Halls (Prefeituras), Cooperatives (Cooperativas), and their members (Cooperados). The app facilitates tracking of collected materials, attendance, financial distributions, and more, with a role-based access system to ensure relevance for each user type.
 
