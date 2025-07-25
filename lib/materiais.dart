@@ -351,6 +351,8 @@ class _MateriaisState extends State<Materiais> {
           );
         },
       ),
+
+      
       // Widget flutuante no topo direito mostrando o valor da partilha
       floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       floatingActionButton: Container(
