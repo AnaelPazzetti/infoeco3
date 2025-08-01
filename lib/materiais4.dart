@@ -19,6 +19,7 @@ class _Materiais4State extends State<Materiais4> {
   String? cooperativaUid;
   String? prefeituraUid;
   Map<String, dynamic> materiaisQtd = {};
+  Map<String, dynamic> materiaisGQtd = {};
   bool isLoading = true;
 
   @override
@@ -42,8 +43,14 @@ class _Materiais4State extends State<Materiais4> {
         .collection('cooperados').doc(profile.cooperadoUid)
         .get();
 
-    if (docCooperado.exists && docCooperado.data() != null && docCooperado.data()!.containsKey('materiais_qtd')) {
-      materiaisQtd = Map<String, dynamic>.from(docCooperado['materiais_qtd']);
+    if (docCooperado.exists && docCooperado.data() != null) {
+      final data = docCooperado.data()!;
+      if (data.containsKey('materiais_qtd')) {
+        materiaisQtd = Map<String, dynamic>.from(data['materiais_qtd']);
+      }
+      if (data.containsKey('materiaisG_qtd')) {
+        materiaisGQtd = Map<String, dynamic>.from(data['materiaisG_qtd']);
+      }
     }
 
     setState(() => isLoading = false);
@@ -63,17 +70,37 @@ class _Materiais4State extends State<Materiais4> {
             constraints: const BoxConstraints(maxWidth: 700),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Quantidade (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: [
-                  for (final entry in materiaisQtd.entries)
-                    DataRow(cells: [
-                      DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
-                      DataCell(Text(entry.value.toString(), style: const TextStyle(fontSize: 16))),
-                    ]),
+              child: Column(
+                children: [
+                  const Text('Materiais Individuais', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Quantidade (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                    rows: [
+                      for (final entry in materiaisQtd.entries)
+                        DataRow(cells: [
+                          DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
+                          DataCell(Text(entry.value.toString(), style: const TextStyle(fontSize: 16))),
+                        ]),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('Materiais Gerais', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Quantidade (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                    rows: [
+                      for (final entry in materiaisGQtd.entries)
+                        DataRow(cells: [
+                          DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
+                          DataCell(Text(entry.value.toString(), style: const TextStyle(fontSize: 16))),
+                        ]),
+                    ],
+                  ),
                 ],
               ),
             ),

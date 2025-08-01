@@ -21,8 +21,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
   String? cooperativaUid;
   String? prefeituraUid;
   bool get viewOnly => widget.viewOnly;
-  Map<String, double> materiaisPreco = {};
-  Map<String, dynamic> materiaisQtd = {};
+  Map<String, Map<String, dynamic>> materiais = {};
   bool isLoading = true;
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
@@ -39,89 +38,42 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
   // Carrega os materiais e preços da cooperativa logada
   Future<void> _carregarMateriais() async {
     final profile = await _userProfileService.getUserProfileInfo();
+    DocumentSnapshot<Map<String, dynamic>>? doc;
+
     if (profile.role == UserRole.cooperativa) {
       cooperativaUid = profile.cooperativaUid;
-      // Busca prefeituraUid do perfil, pois é salvo no registro
       prefeituraUid = profile.prefeituraUid;
-      debugPrint('Cooperativa logada: cooperativaUid=$cooperativaUid, prefeituraUid=$prefeituraUid');
-      // Busca o documento da cooperativa como subcoleção de prefeituras
-      final doc = await FirebaseFirestore.instance
+      doc = await FirebaseFirestore.instance
           .collection('prefeituras')
           .doc(profile.prefeituraUid)
           .collection('cooperativas')
           .doc(cooperativaUid)
           .get();
-      if (doc.exists) {
-        final data = doc.data();
-        if (data != null) {
-          // Corrige: prefeituraUid deve ser lida do campo do documento
-          prefeituraUid = data['prefeitura_uid'] as String?;
-          debugPrint('Corrigido: prefeituraUid lido do doc = $prefeituraUid');
-          if (data.containsKey('materiais_preco')) {
-            materiaisPreco = Map<String, double>.from(data['materiais_preco']);
-          }
-          if (data.containsKey('materiais_qtd')) {
-            materiaisQtd = Map<String, dynamic>.from(data['materiais_qtd']);
-          }
-        }
-      }
     } else if (widget.cooperativaUid != null && widget.prefeituraUid != null) {
-      // Prefeitura/admin pode ver qualquer cooperativa
       cooperativaUid = widget.cooperativaUid;
       prefeituraUid = widget.prefeituraUid;
-      debugPrint('Admin/prefeitura: cooperativaUid=$cooperativaUid, prefeituraUid=$prefeituraUid');
-      final doc = await FirebaseFirestore.instance
+      doc = await FirebaseFirestore.instance
           .collection('prefeituras')
           .doc(prefeituraUid)
           .collection('cooperativas')
           .doc(cooperativaUid)
           .get();
-      if (doc.exists && doc.data()?.containsKey('materiais_preco') == true) {
-        materiaisPreco = Map<String, double>.from(doc['materiais_preco']);
-      }
-      if (doc.exists && doc.data()?.containsKey('materiais_qtd') == true) {
-        materiaisQtd = Map<String, dynamic>.from(doc['materiais_qtd']);
-      }
-    } else {
-      cooperativaUid = null;
-      prefeituraUid = null;
-      debugPrint('Erro: UIDs nulos.');
     }
-    setState(() => isLoading = false);
-  }
 
-  // Recalcula valor_partilha de todos os cooperados após alteração de materiais_preco
-  Future<void> _recalcularValorPartilhaParaTodosCooperados() async {
-    if (cooperativaUid == null) return;
-    // O prefeituraUid é carregado em _carregarMateriais e deve estar disponível aqui.
-    // A verificação anterior, que foi removida, impedia incorretamente a cooperativa de executar esta função.
-    if (prefeituraUid == null) return; 
-    // Busca o preço atualizado dos materiais
-    final docCoop = await FirebaseFirestore.instance
-        .collection('prefeituras')
-        .doc(prefeituraUid)
-        .collection('cooperativas')
-        .doc(cooperativaUid)
-        .get();
-    final materiaisPreco = Map<String, dynamic>.from(docCoop.data()?['materiais_preco'] ?? {});
-    // Busca todos os cooperados
-    final cooperadosSnapshot = await FirebaseFirestore.instance
-        .collection('prefeituras')
-        .doc(prefeituraUid)
-        .collection('cooperativas')
-        .doc(cooperativaUid)
-        .collection('cooperados')
-        .get();
-    for (final doc in cooperadosSnapshot.docs) {
+    if (doc != null && doc.exists) {
       final data = doc.data();
-      final materiaisQtd = Map<String, dynamic>.from(data['materiais_qtd'] ?? {});
-      double novoValorPartilha = 0;
-      materiaisQtd.forEach((material, qtd) {
-        final preco = (materiaisPreco[material] ?? 0).toDouble();
-        novoValorPartilha += (qtd is num ? qtd.toDouble() : 0) * preco;
-      });
-      await doc.reference.update({'valor_partilha': novoValorPartilha});
+      if (data != null) {
+        if (data.containsKey('materiais')) {
+          materiais = Map<String, Map<String, dynamic>>.from(data['materiais']);
+        } else if (data.containsKey('materiais_preco')) {
+          // Converte do formato antigo para o novo
+          final precos = Map<String, double>.from(data['materiais_preco']);
+          materiais = precos.map((key, value) => MapEntry(key, {'preco': value, 'partilha': 'Individual'}));
+        }
+      }
     }
+
+    setState(() => isLoading = false);
   }
 
   // Adiciona novo material ao Firestore
@@ -135,16 +87,19 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
       return;
     }
     setState(() => isLoading = true);
-    materiaisPreco[nome] = valor;
+    materiais[nome] = {
+      'preco': valor,
+      'partilha': _tipoPartilha,
+    };
     await FirebaseFirestore.instance
         .collection('prefeituras')
         .doc(prefeituraUid)
         .collection('cooperativas')
         .doc(cooperativaUid)
-        .update({'materiais_preco': materiaisPreco});
-    await _recalcularValorPartilhaParaTodosCooperados();
+        .update({'materiais': materiais});
     _nomeController.clear();
     _valorController.clear();
+    _tipoPartilha = null;
     await _carregarMateriais();
     setState(() => isLoading = false);
   }
@@ -155,7 +110,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Materiais 2')),
+      appBar: AppBar(title: const Text('Gerenciar Materiais')),
       body: Column(
         children: [
           Expanded(
@@ -163,131 +118,66 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
               padding: const EdgeInsets.all(16.0),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200), // Similar to presencas.dart
+                  constraints: const BoxConstraints(maxWidth: 1200),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
                       columns: const [
                         DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
                         DataColumn(label: Text('Valor/kg', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Quantidade', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Valor', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Tipo de Partilha', style: TextStyle(fontWeight: FontWeight.bold))),
                         DataColumn(label: Text('Ações', style: TextStyle(fontWeight: FontWeight.bold))),
                       ],
                       rows: [
-                        for (final entry in (materiaisPreco.entries.toList()..sort((a, b) => a.key.compareTo(b.key))))
+                        for (final entry in (materiais.entries.toList()..sort((a, b) => a.key.compareTo(b.key))))
                           DataRow(cells: [
                             DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
-                            DataCell(Text(entry.value.toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
-                            DataCell(Text((materiaisQtd[entry.key] ?? 0).toString(), style: const TextStyle(fontSize: 16))),
-                            DataCell(Text((entry.value * (materiaisQtd[entry.key] ?? 0)).toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
+                            DataCell(Text(entry.value['preco'].toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
+                            DataCell(Text(entry.value['partilha'], style: const TextStyle(fontSize: 16))),
                             DataCell(Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.edit, color: Colors.blue),
-                                  tooltip: 'Editar valor',
-                                  onPressed: viewOnly
-                                      ? null
-                                      : () async {
-                                          final controller = TextEditingController(text: entry.value.toString());
-                                          final result = await showDialog<double>(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              title: Text('Editar valor de ${entry.key}'),
-                                              content: TextField(
-                                                controller: controller,
-                                                keyboardType: TextInputType.number,
-                                                decoration: const InputDecoration(labelText: 'Novo valor (kg)'),
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context),
-                                                  child: const Text('Cancelar'),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () async {
-                                                    final novoValor = double.tryParse(controller.text.trim());
-                                                    if (novoValor != null) {
-                                                      final confirm = await showDialog<bool>(
-                                                        context: context,
-                                                        builder: (context) => AlertDialog(
-                                                          title: const Text('Confirmação'),
-                                                          content: const Text('Tem certeza que deseja realizar essa ação?'),
-                                                          actions: [
-                                                            TextButton(
-                                                              onPressed: () => Navigator.pop(context, false),
-                                                              child: const Text('Cancelar'),
-                                                            ),
-                                                            ElevatedButton(
-                                                              onPressed: () => Navigator.pop(context, true),
-                                                              child: const Text('Confirmar'),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                      if (confirm == true) {
-                                                        Navigator.pop(context, novoValor);
-                                                      }
-                                                    }
-                                                  },
-                                                  child: const Text('Salvar'),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                          if (result != null) {
-                                            setState(() => isLoading = true);
-                                            materiaisPreco[entry.key] = result;
-                                            await FirebaseFirestore.instance
-                                                .collection('prefeituras')
-                                                .doc(prefeituraUid)
-                                                .collection('cooperativas')
-                                                .doc(cooperativaUid)
-                                                .update({'materiais_preco': materiaisPreco});
-                                            await _recalcularValorPartilhaParaTodosCooperados();
-                                            await _carregarMateriais();
-                                            setState(() => isLoading = false);
-                                          }
-                                        },
+                                  tooltip: 'Editar',
+                                  onPressed: viewOnly ? null : () async {
+                                    // Implementar a lógica de edição aqui se necessário
+                                  },
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete, color: Colors.red),
-                                  tooltip: 'Excluir material',
-                                  onPressed: viewOnly
-                                      ? null
-                                      : () async {
-                                          final confirm = await showDialog<bool>(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              title: const Text('Confirmação'),
-                                              content: const Text('Tem certeza que deseja realizar essa ação?'),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context, false),
-                                                  child: const Text('Cancelar'),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () => Navigator.pop(context, true),
-                                                  child: const Text('Confirmar'),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                          if (confirm == true) {
-                                            setState(() => isLoading = true);
-                                            materiaisPreco.remove(entry.key);
-                                            await FirebaseFirestore.instance
-                                                .collection('prefeituras')
-                                                .doc(prefeituraUid)
-                                                .collection('cooperativas')
-                                                .doc(cooperativaUid)
-                                                .update({'materiais_preco': materiaisPreco});
-                                            await _recalcularValorPartilhaParaTodosCooperados();
-                                            await _carregarMateriais();
-                                            setState(() => isLoading = false);
-                                          }
-                                        },
+                                  tooltip: 'Excluir',
+                                  onPressed: viewOnly ? null : () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Confirmação'),
+                                        content: const Text('Tem certeza que deseja excluir este material?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: const Text('Cancelar'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: const Text('Confirmar'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      setState(() => isLoading = true);
+                                      materiais.remove(entry.key);
+                                      await FirebaseFirestore.instance
+                                          .collection('prefeituras')
+                                          .doc(prefeituraUid)
+                                          .collection('cooperativas')
+                                          .doc(cooperativaUid)
+                                          .update({'materiais': materiais});
+                                      await _carregarMateriais();
+                                      setState(() => isLoading = false);
+                                    }
+                                  },
                                 ),
                               ],
                             )),
@@ -304,7 +194,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 children: [
-                  const Text('Adicionar novo material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const Text('Adicionar Novo Material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -314,7 +204,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
                         child: TextField(
                           controller: _nomeController,
                           decoration: const InputDecoration(
-                            labelText: 'Nome do material',
+                            labelText: 'Nome do Material',
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -333,7 +223,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
                       ),
                       const SizedBox(width: 16),
                       DropdownButton<String>(
-                        hint: const Text('Tipo de partilha'),
+                        hint: const Text('Tipo de Partilha'),
                         value: _tipoPartilha,
                         items: <String>['Individual', 'Geral'].map((String value) {
                           return DropdownMenuItem<String>(

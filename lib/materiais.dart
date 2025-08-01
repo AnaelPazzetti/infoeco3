@@ -7,14 +7,6 @@ import 'materiais4.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
 import 'user_profile_service.dart'; // Importa o serviço de perfil de usuário
 
-// Tela onde o cooperado registra os materiais coletados
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'materiais4.dart';
-import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
-import 'user_profile_service.dart'; // Importa o serviço de perfil de usuário
-
 class Materiais extends StatefulWidget {
   final String? cooperativaUid;
   final String? prefeituraUid;
@@ -29,7 +21,7 @@ class _MateriaisState extends State<Materiais> {
   String? cooperativaUid;
   String? _prefeituraUid;
   bool get viewOnly => widget.viewOnly;
-  Map<String, double> materiaisPreco = {};
+  Map<String, Map<String, dynamic>> materiais = {};
   List<MaterialRow> materiaisRows = [];
   bool isLoading = true;
   double valorPartilha = 0.0; // Valor total da partilha do cooperado
@@ -63,30 +55,19 @@ class _MateriaisState extends State<Materiais> {
       setState(() => isLoading = false);
       return;
     }
-    final profile = await _userProfileService.getUserProfileInfo();
-    if(profile.role == UserRole.cooperado) {
-      final doc = await FirebaseFirestore.instance
+    final doc = await FirebaseFirestore.instance
         .collection('prefeituras')
         .doc(_prefeituraUid)
         .collection('cooperativas')
         .doc(cooperativaUid)
         .get();
-      if (doc.exists && doc.data()?.containsKey('materiais_preco') == true) {
-        materiaisPreco = Map<String, double>.from(doc['materiais_preco']);
-        if (materiaisPreco.isNotEmpty) {
-          materiaisRows = [MaterialRow(nome: materiaisPreco.keys.first, quantidade: 0)];
+    if (doc.exists) {
+      final data = doc.data();
+      if (data != null && data.containsKey('materiais')) {
+        materiais = Map<String, Map<String, dynamic>>.from(data['materiais']);
+        if (materiais.isNotEmpty) {
+          materiaisRows = [MaterialRow(nome: materiais.keys.first, quantidade: 0)];
         }
-      }
-    } else if (profile.role == UserRole.cooperativa) {
-      final coopDoc = await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .get();
-      materiaisPreco = Map<String, double>.from(coopDoc.data()?['materiaisIgualitarios_preco'] ?? {});
-      if (materiaisPreco.isNotEmpty) {
-        materiaisRows = [MaterialRow(nome: materiaisPreco.keys.first, quantidade: 0)];
       }
     }
     setState(() => isLoading = false);
@@ -95,192 +76,122 @@ class _MateriaisState extends State<Materiais> {
 
   Future<void> _carregarValorPartilha() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (cooperativaUid == null || _prefeituraUid == null) return;
-    final profile = await _userProfileService.getUserProfileInfo();
-    if (profile.role == UserRole.cooperado) {
-      if (user == null) return;
-      final docCooperado = await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .collection('cooperados')
-          .doc(user.uid)
-          .get();
-      if (docCooperado.exists && docCooperado.data() != null) {
-        setState(() {
-          valorPartilha = (docCooperado['valor_partilha'] as num?)?.toDouble() ?? 0.0;
-        });
-      }
-    } else if (profile.role == UserRole.cooperativa) {
-      final docCoop = await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .get();
-      if (docCoop.exists && docCoop.data() != null) {
-        setState(() {
-          valorPartilha = (docCoop['valor_partilha'] as num?)?.toDouble() ?? 0.0;
-        });
-      }
+    if (cooperativaUid == null || _prefeituraUid == null || user == null) return;
+
+    final docCooperado = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(_prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('cooperados')
+        .doc(user.uid)
+        .get();
+
+    if (docCooperado.exists && docCooperado.data() != null) {
+      setState(() {
+        valorPartilha = (docCooperado['valor_partilha'] as num?)?.toDouble() ?? 0.0;
+      });
     }
   }
 
   Future<void> _atualizarValorPartilha() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (cooperativaUid == null || _prefeituraUid == null) return;
-    final profile = await _userProfileService.getUserProfileInfo();
-    if (profile.role == UserRole.cooperado) {
-      if (user == null) return;
-      final docCooperado = await FirebaseFirestore.instance
+    if (cooperativaUid == null || _prefeituraUid == null || user == null) return;
+
+    final docCooperado = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(_prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('cooperados')
+        .doc(user.uid)
+        .get();
+
+    if (docCooperado.exists && docCooperado.data() != null) {
+      final materiaisQtd = Map<String, dynamic>.from(docCooperado['materiais_qtd'] ?? {});
+      double novoValor = 0.0;
+      materiaisQtd.forEach((material, qtd) {
+        final preco = materiais[material]?['preco'] ?? 0.0;
+        novoValor += (qtd as num) * preco;
+      });
+
+      await FirebaseFirestore.instance
           .collection('prefeituras')
           .doc(_prefeituraUid)
           .collection('cooperativas')
           .doc(cooperativaUid)
           .collection('cooperados')
           .doc(user.uid)
-          .get();
-      if (docCooperado.exists && docCooperado.data() != null) {
-        final materiaisQtd = Map<String, dynamic>.from(docCooperado['materiais_qtd'] ?? {});
-        double novoValor = 0.0;
-        materiaisQtd.forEach((material, qtd) {
-          final preco = materiaisPreco[material] ?? 0.0;
-          novoValor += (qtd as num) * preco;
-        });
-        await FirebaseFirestore.instance
-            .collection('prefeituras')
-            .doc(_prefeituraUid)
-            .collection('cooperativas')
-            .doc(cooperativaUid)
-            .collection('cooperados')
-            .doc(user.uid)
-            .update({'valor_partilha': novoValor});
-        setState(() {
-          valorPartilha = novoValor;
-        });
-      }
-    } else if (profile.role == UserRole.cooperativa) {
-      final docCoop = await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .get();
-      if (docCoop.exists && docCoop.data() != null) {
-        final materiaisQtd = Map<String, dynamic>.from(docCoop['materiais_qtd'] ?? {});
-        double novoValor = 0.0;
-        materiaisQtd.forEach((material, qtd) {
-          final preco = materiaisPreco[material] ?? 0.0;
-          novoValor += (qtd as num) * preco;
-        });
-        await FirebaseFirestore.instance
-            .collection('prefeituras')
-            .doc(_prefeituraUid)
-            .collection('cooperativas')
-            .doc(cooperativaUid)
-            .update({'valor_partilha': novoValor});
-        setState(() {
-          valorPartilha = novoValor;
-        });
-      }
+          .update({'valor_partilha': novoValor});
+
+      setState(() {
+        valorPartilha = novoValor;
+      });
     }
   }
 
   double _calcularValor(String nome, double quantidade) {
-    return (materiaisPreco[nome] ?? 0) * quantidade;
+    return (materiais[nome]?['preco'] ?? 0) * quantidade;
   }
 
   Future<void> _enviarDadosMaterial(int rowIndex) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (cooperativaUid == null || _prefeituraUid == null) return;
-    final profile = await _userProfileService.getUserProfileInfo();
-    final material = materiaisRows[rowIndex].nome;
+    if (cooperativaUid == null || _prefeituraUid == null || user == null) return;
+
+    final materialNome = materiaisRows[rowIndex].nome;
     final quantidade = materiaisRows[rowIndex].quantidade;
+    final partilha = materiais[materialNome]?['partilha'];
+
     if (quantidade <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Informe uma quantidade válida!')),
       );
       return;
     }
-    if (profile.role == UserRole.cooperado) {
-      if (user == null) return;
-      final docCooperado = await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .collection('cooperados')
-          .doc(user.uid)
-          .get();
-      Map<String, dynamic> materiaisQtdCooperado = {};
-      if (docCooperado.exists && docCooperado.data() != null) {
-        if (docCooperado.data()!.containsKey('materiais_qtd')) {
-          materiaisQtdCooperado = Map<String, dynamic>.from(docCooperado['materiais_qtd']);
-        }
-      }
-      if (materiaisQtdCooperado.containsKey(material)) {
-        materiaisQtdCooperado[material] = (materiaisQtdCooperado[material] ?? 0) + quantidade;
-      } else {
-        materiaisQtdCooperado[material] = quantidade;
-      }
-      await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .collection('cooperados')
-          .doc(user.uid)
-          .update({
-            'materiais_qtd': materiaisQtdCooperado,
-          });
-      final docCoop = await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .get();
-      Map<String, dynamic> materiaisQtdCoop = {};
-      if (docCoop.exists && docCoop.data() != null && docCoop.data()!.containsKey('materiais_qtd')) {
-        materiaisQtdCoop = Map<String, dynamic>.from(docCoop['materiais_qtd']);
-      }
-      if (materiaisQtdCoop.containsKey(material)) {
-        materiaisQtdCoop[material] = (materiaisQtdCoop[material] ?? 0) + quantidade;
-      } else {
-        materiaisQtdCoop[material] = quantidade;
-      }
-      await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .update({'materiais_qtd': materiaisQtdCoop});
-    } else if (profile.role == UserRole.cooperativa) {
-      final docCoop = await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .get();
-      Map<String, dynamic> materiaisQtdCoop = {};
-      if (docCoop.exists && docCoop.data() != null && docCoop.data()!.containsKey('materiais_qtd')) {
-        materiaisQtdCoop = Map<String, dynamic>.from(docCoop['materiais_qtd']);
-      }
-      if (materiaisQtdCoop.containsKey(material)) {
-        materiaisQtdCoop[material] = (materiaisQtdCoop[material] ?? 0) + quantidade;
-      } else {
-        materiaisQtdCoop[material] = quantidade;
-      }
-      await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(_prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .update({'materiais_qtd': materiaisQtdCoop});
+
+    final firestore = FirebaseFirestore.instance;
+    final cooperadoRef = firestore
+        .collection('prefeituras')
+        .doc(_prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('cooperados')
+        .doc(user.uid);
+
+    final cooperativaRef = firestore
+        .collection('prefeituras')
+        .doc(_prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid);
+
+    if (partilha == 'Individual') {
+      await firestore.runTransaction((transaction) async {
+        final cooperadoDoc = await transaction.get(cooperadoRef);
+        final cooperativaDoc = await transaction.get(cooperativaRef);
+
+        final materiaisQtdCooperado = Map<String, dynamic>.from(cooperadoDoc.data()?['materiais_qtd'] ?? {});
+        materiaisQtdCooperado[materialNome] = (materiaisQtdCooperado[materialNome] ?? 0) + quantidade;
+
+        final materiaisQtdCooperativa = Map<String, dynamic>.from(cooperativaDoc.data()?['materiais_qtd'] ?? {});
+        materiaisQtdCooperativa[materialNome] = (materiaisQtdCooperativa[materialNome] ?? 0) + quantidade;
+
+        transaction.update(cooperadoRef, {'materiais_qtd': materiaisQtdCooperado});
+        transaction.update(cooperativaRef, {'materiais_qtd': materiaisQtdCooperativa});
+      });
+    } else if (partilha == 'Geral') {
+      await firestore.runTransaction((transaction) async {
+        final cooperativaDoc = await transaction.get(cooperativaRef);
+
+        final materiaisQtdGeral = Map<String, dynamic>.from(cooperativaDoc.data()?['materiaisG_qtd'] ?? {});
+        materiaisQtdGeral[materialNome] = (materiaisQtdGeral[materialNome] ?? 0) + quantidade;
+
+        transaction.update(cooperativaRef, {'materiaisG_qtd': materiaisQtdGeral});
+      });
     }
+
     await _atualizarValorPartilha();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Material enviado com sucesso!')),
+      const SnackBar(content: Text('Material enviado com sucesso!')),
     );
     setState(() {
       materiaisRows[rowIndex].quantidade = 0;
@@ -293,7 +204,7 @@ class _MateriaisState extends State<Materiais> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Materiais')),
+      appBar: AppBar(title: const Text('Registrar Materiais')),
       body: Center(
         child: SingleChildScrollView(
           scrollDirection: Axis.vertical,
@@ -324,7 +235,7 @@ class _MateriaisState extends State<Materiais> {
                                   child: DropdownButton<String>(
                                     value: materiaisRows[i].nome,
                                     isExpanded: true,
-                                    items: materiaisPreco.keys.map((nome) {
+                                    items: materiais.keys.map((nome) {
                                       return DropdownMenuItem(
                                         value: nome,
                                         child: Tooltip(
@@ -339,7 +250,7 @@ class _MateriaisState extends State<Materiais> {
                                       );
                                     }).toList(),
                                     selectedItemBuilder: (context) {
-                                      return materiaisPreco.keys.map((nome) {
+                                      return materiais.keys.map((nome) {
                                         return Tooltip(
                                           message: nome,
                                           child: Text(
@@ -365,7 +276,7 @@ class _MateriaisState extends State<Materiais> {
                               ],
                             ),
                           ),
-                          DataCell(Text((materiaisPreco[materiaisRows[i].nome] ?? 0).toStringAsFixed(2))),
+                          DataCell(Text((materiais[materiaisRows[i].nome]?['preco'] ?? 0).toStringAsFixed(2))),
                           DataCell(
                             SizedBox(
                               width: 80,
