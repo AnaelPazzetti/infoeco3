@@ -26,6 +26,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
   bool isLoading = true;
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _valorController = TextEditingController();
+  String? _tipoPartilha;
 
   @override
   void initState() {
@@ -127,9 +128,9 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
   Future<void> _adicionarMaterial() async {
     final nome = _nomeController.text.trim();
     final valor = double.tryParse(_valorController.text.trim());
-    if (nome.isEmpty || valor == null) {
+    if (nome.isEmpty || valor == null || _tipoPartilha == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha nome e valor corretamente!')),
+        const SnackBar(content: Text('Preencha todos os campos!')),
       );
       return;
     }
@@ -155,197 +156,213 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Materiais 2')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.8;
-          return Center(
+      body: Column(
+        children: [
+          Expanded(
             child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: tableWidth),
-                        child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Valor/kg', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Quantidade', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Valor', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Ações', style: TextStyle(fontWeight: FontWeight.bold))),
-                          ],
-                          rows: [
-                            for (final entry in (materiaisPreco.entries.toList()..sort((a, b) => a.key.compareTo(b.key))))
-                              DataRow(cells: [
-                                DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
-                                DataCell(Text(entry.value.toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
-                                DataCell(Text((materiaisQtd[entry.key] ?? 0).toString(), style: const TextStyle(fontSize: 16))),
-                                DataCell(Text((entry.value * (materiaisQtd[entry.key] ?? 0)).toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
-                                DataCell(Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Colors.blue),
-                                      tooltip: 'Editar valor',
-                                      onPressed: viewOnly
-                                          ? null
-                                          : () async {
-                                              final controller = TextEditingController(text: entry.value.toString());
-                                              final result = await showDialog<double>(
-                                                context: context,
-                                                builder: (context) => AlertDialog(
-                                                  title: Text('Editar valor de ${entry.key}'),
-                                                  content: TextField(
-                                                    controller: controller,
-                                                    keyboardType: TextInputType.number,
-                                                    decoration: const InputDecoration(labelText: 'Novo valor (kg)'),
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () => Navigator.pop(context),
-                                                      child: const Text('Cancelar'),
-                                                    ),
-                                                    ElevatedButton(
-                                                      onPressed: () async {
-                                                        final novoValor = double.tryParse(controller.text.trim());
-                                                        if (novoValor != null) {
-                                                          final confirm = await showDialog<bool>(
-                                                            context: context,
-                                                            builder: (context) => AlertDialog(
-                                                              title: const Text('Confirmação'),
-                                                              content: const Text('Tem certeza que deseja realizar essa ação?'),
-                                                              actions: [
-                                                                TextButton(
-                                                                  onPressed: () => Navigator.pop(context, false),
-                                                                  child: const Text('Cancelar'),
-                                                                ),
-                                                                ElevatedButton(
-                                                                  onPressed: () => Navigator.pop(context, true),
-                                                                  child: const Text('Confirmar'),
-                                                                ),
-                                                              ],
+              padding: const EdgeInsets.all(16.0),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200), // Similar to presencas.dart
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Valor/kg', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Quantidade', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Valor', style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Ações', style: TextStyle(fontWeight: FontWeight.bold))),
+                      ],
+                      rows: [
+                        for (final entry in (materiaisPreco.entries.toList()..sort((a, b) => a.key.compareTo(b.key))))
+                          DataRow(cells: [
+                            DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
+                            DataCell(Text(entry.value.toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
+                            DataCell(Text((materiaisQtd[entry.key] ?? 0).toString(), style: const TextStyle(fontSize: 16))),
+                            DataCell(Text((entry.value * (materiaisQtd[entry.key] ?? 0)).toStringAsFixed(2), style: const TextStyle(fontSize: 16))),
+                            DataCell(Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  tooltip: 'Editar valor',
+                                  onPressed: viewOnly
+                                      ? null
+                                      : () async {
+                                          final controller = TextEditingController(text: entry.value.toString());
+                                          final result = await showDialog<double>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: Text('Editar valor de ${entry.key}'),
+                                              content: TextField(
+                                                controller: controller,
+                                                keyboardType: TextInputType.number,
+                                                decoration: const InputDecoration(labelText: 'Novo valor (kg)'),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  child: const Text('Cancelar'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () async {
+                                                    final novoValor = double.tryParse(controller.text.trim());
+                                                    if (novoValor != null) {
+                                                      final confirm = await showDialog<bool>(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          title: const Text('Confirmação'),
+                                                          content: const Text('Tem certeza que deseja realizar essa ação?'),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context, false),
+                                                              child: const Text('Cancelar'),
                                                             ),
-                                                          );
-                                                          if (confirm == true) {
-                                                            Navigator.pop(context, novoValor);
-                                                          }
-                                                        }
-                                                      },
-                                                      child: const Text('Salvar'),
-                                                    ),
-                                                  ],
+                                                            ElevatedButton(
+                                                              onPressed: () => Navigator.pop(context, true),
+                                                              child: const Text('Confirmar'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                      if (confirm == true) {
+                                                        Navigator.pop(context, novoValor);
+                                                      }
+                                                    }
+                                                  },
+                                                  child: const Text('Salvar'),
                                                 ),
-                                              );
-                                              if (result != null) {
-                                                setState(() => isLoading = true);
-                                                materiaisPreco[entry.key] = result;
-                                                await FirebaseFirestore.instance
-                                                    .collection('prefeituras')
-                                                    .doc(prefeituraUid)
-                                                    .collection('cooperativas')
-                                                    .doc(cooperativaUid)
-                                                    .update({'materiais_preco': materiaisPreco});
-                                                await _recalcularValorPartilhaParaTodosCooperados();
-                                                await _carregarMateriais();
-                                                setState(() => isLoading = false);
-                                              }
-                                            },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      tooltip: 'Excluir material',
-                                      onPressed: viewOnly
-                                          ? null
-                                          : () async {
-                                              final confirm = await showDialog<bool>(
-                                                context: context,
-                                                builder: (context) => AlertDialog(
-                                                  title: const Text('Confirmação'),
-                                                  content: const Text('Tem certeza que deseja realizar essa ação?'),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () => Navigator.pop(context, false),
-                                                      child: const Text('Cancelar'),
-                                                    ),
-                                                    ElevatedButton(
-                                                      onPressed: () => Navigator.pop(context, true),
-                                                      child: const Text('Confirmar'),
-                                                    ),
-                                                  ],
+                                              ],
+                                            ),
+                                          );
+                                          if (result != null) {
+                                            setState(() => isLoading = true);
+                                            materiaisPreco[entry.key] = result;
+                                            await FirebaseFirestore.instance
+                                                .collection('prefeituras')
+                                                .doc(prefeituraUid)
+                                                .collection('cooperativas')
+                                                .doc(cooperativaUid)
+                                                .update({'materiais_preco': materiaisPreco});
+                                            await _recalcularValorPartilhaParaTodosCooperados();
+                                            await _carregarMateriais();
+                                            setState(() => isLoading = false);
+                                          }
+                                        },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  tooltip: 'Excluir material',
+                                  onPressed: viewOnly
+                                      ? null
+                                      : () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Confirmação'),
+                                              content: const Text('Tem certeza que deseja realizar essa ação?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  child: const Text('Cancelar'),
                                                 ),
-                                              );
-                                              if (confirm == true) {
-                                                setState(() => isLoading = true);
-                                                materiaisPreco.remove(entry.key);
-                                                await FirebaseFirestore.instance
-                                                    .collection('prefeituras')
-                                                    .doc(prefeituraUid)
-                                                    .collection('cooperativas')
-                                                    .doc(cooperativaUid)
-                                                    .update({'materiais_preco': materiaisPreco});
-                                                await _recalcularValorPartilhaParaTodosCooperados();
-                                                await _carregarMateriais();
-                                                setState(() => isLoading = false);
-                                              }
-                                            },
-                                    ),
-                                  ],
-                                )),
-                              ]),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      if (!viewOnly) ...{
-                        const Text('Adicionar novo material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 200,
-                              child: TextField(
-                                controller: _nomeController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Nome do material',
-                                  border: OutlineInputBorder(),
+                                                ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  child: const Text('Confirmar'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            setState(() => isLoading = true);
+                                            materiaisPreco.remove(entry.key);
+                                            await FirebaseFirestore.instance
+                                                .collection('prefeituras')
+                                                .doc(prefeituraUid)
+                                                .collection('cooperativas')
+                                                .doc(cooperativaUid)
+                                                .update({'materiais_preco': materiaisPreco});
+                                            await _recalcularValorPartilhaParaTodosCooperados();
+                                            await _carregarMateriais();
+                                            setState(() => isLoading = false);
+                                          }
+                                        },
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: 120,
-                              child: TextField(
-                                controller: _valorController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: 'Valor/kg',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            ElevatedButton(
-                              onPressed: _adicionarMaterial,
-                              child: const Text('Adicionar'),
-                            ),
-                          ],
-                        ),
-                      } else ...{
-                        const Text('Modo somente leitura', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                      },
-                    ],
+                              ],
+                            )),
+                          ]),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          );
-        },
+          ),
+          if (!viewOnly)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  const Text('Adicionar novo material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: TextField(
+                          controller: _nomeController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nome do material',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 120,
+                        child: TextField(
+                          controller: _valorController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Valor/kg',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      DropdownButton<String>(
+                        hint: const Text('Tipo de partilha'),
+                        value: _tipoPartilha,
+                        items: <String>['Individual', 'Geral'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _tipoPartilha = newValue;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _adicionarMaterial,
+                    child: const Text('Adicionar'),
+                  ),
+                ],
+              ),
+            )
+          else
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('Modo somente leitura', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+        ],
       ),
     );
   }

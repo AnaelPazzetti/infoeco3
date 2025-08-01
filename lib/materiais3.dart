@@ -165,6 +165,7 @@ class _Materiais3State extends State<Materiais3> {
         .doc(cooperativaUid)
         .collection('cooperados')
         .get();
+
     // Busca o preço do material
     final docCoop = await FirebaseFirestore.instance
         .collection('prefeituras')
@@ -195,6 +196,7 @@ class _Materiais3State extends State<Materiais3> {
       final qtdMaterial = (materiaisQtdCoop[material] ?? 0) as num;
       materiaisQtdCoop[material] = 0;
       final valorPartilhaDoc = precoMaterial * qtdMaterial;
+
       await _criarPartilha(
         prefeituraUid: prefeituraUid!,
         cooperativaUid: cooperativaUid!,
@@ -217,6 +219,8 @@ class _Materiais3State extends State<Materiais3> {
             'materiais_qtd': materiaisQtdCoop
           });
     }
+
+
     // Zera o material também no map materiais_qtd da cooperativa
     final docCoopAtual = await FirebaseFirestore.instance
         .collection('prefeituras')
@@ -224,6 +228,7 @@ class _Materiais3State extends State<Materiais3> {
         .collection('cooperativas')
         .doc(cooperativaUid)
         .get();
+      
     Map<String, dynamic> materiaisQtdCoop = {};
     if (docCoopAtual.exists && docCoopAtual.data() != null && docCoopAtual.data()!.containsKey('materiais_qtd')) {
       materiaisQtdCoop = Map<String, dynamic>.from(docCoopAtual['materiais_qtd']);
@@ -270,6 +275,7 @@ class _Materiais3State extends State<Materiais3> {
   Future<void> _partilhaTotal() async {
     if (cooperativaUid == null || prefeituraUid == null) return;
     setState(() => isLoading = true);
+
     // Busca materiais_preco
     final doc = await FirebaseFirestore.instance
         .collection('prefeituras')
@@ -281,6 +287,8 @@ class _Materiais3State extends State<Materiais3> {
     if (doc.exists && doc.data() != null && doc.data()!.containsKey('materiais_preco')) {
       materiaisPreco = Map<String, dynamic>.from(doc['materiais_preco']);
     }
+
+
     // Cria partilha total para cooperativa
     await _criarPartilha(
       prefeituraUid: prefeituraUid!,
@@ -289,6 +297,7 @@ class _Materiais3State extends State<Materiais3> {
       materiaisPreco: materiaisPreco,
       data: DateTime.now(),
     );
+
     // Reseta materiais_qtd da cooperativa para 0
     final resetMap = Map<String, dynamic>.from(materiaisQtd.map((k, v) => MapEntry(k, 0)));
     await _atualizarMateriaisQtd(
@@ -296,6 +305,7 @@ class _Materiais3State extends State<Materiais3> {
       cooperativaUid: cooperativaUid!,
       materiaisQtd: resetMap,
     );
+
     // Para cada cooperado, reseta materiais_qtd e salva em subcoleção 'partilhas'
     final cooperadosSnapshot = await FirebaseFirestore.instance
         .collection('prefeituras')
@@ -308,6 +318,7 @@ class _Materiais3State extends State<Materiais3> {
       final cooperadoData = cooperadoDoc.data();
       final materiaisQtdCooperado = Map<String, dynamic>.from(cooperadoData['materiais_qtd'] ?? {});
       final double valorPartilhaExistente = (cooperadoData['valor_partilha'] as num? ?? 0.0).toDouble();
+
       await _criarPartilha(
         prefeituraUid: prefeituraUid!,
         cooperativaUid: cooperativaUid!,
@@ -317,7 +328,9 @@ class _Materiais3State extends State<Materiais3> {
         data: DateTime.now(),
         valorPartilha: valorPartilhaExistente,
       );
+
       final resetCoopMap = Map<String, dynamic>.from(materiaisQtdCooperado.map((k, v) => MapEntry(k, 0)));
+      
       await _atualizarMateriaisQtd(
         prefeituraUid: prefeituraUid!,
         cooperativaUid: cooperativaUid!,

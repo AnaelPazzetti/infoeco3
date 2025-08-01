@@ -55,44 +55,30 @@ class _Materiais4State extends State<Materiais4> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Materiais 4')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.8;
-          return Center(
+      appBar: AppBar(title: const Text('Materiais Coletados')),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
             child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: tableWidth),
-                        child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Quantidade (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
-                          ],
-                          rows: [
-                            for (final entry in materiaisQtd.entries)
-                              DataRow(cells: [
-                                DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
-                                DataCell(Text(entry.value.toString(), style: const TextStyle(fontSize: 16))),
-                              ]),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Quantidade (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                rows: [
+                  for (final entry in materiaisQtd.entries)
+                    DataRow(cells: [
+                      DataCell(Text(entry.key, style: const TextStyle(fontSize: 16))),
+                      DataCell(Text(entry.value.toString(), style: const TextStyle(fontSize: 16))),
+                    ]),
+                ],
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

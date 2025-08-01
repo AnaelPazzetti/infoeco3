@@ -284,6 +284,12 @@ class _MenuState extends State<Menu> {
       ),
       SizedBox(height: 10),
       LargeMenuButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => Materiais())),
+        child: Text('MATERIAIS', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color.fromARGB(255, 255, 179, 65),
+      ),      
+      SizedBox(height: 10),
+      LargeMenuButton(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => Materiais3())),
         child: Text('MATERIAIS SEPARADOS', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue,
