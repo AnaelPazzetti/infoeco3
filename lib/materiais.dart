@@ -1,4 +1,4 @@
-// Tela onde o cooperado registra os materiais coletados
+// Tela onde o cooperado e presidente (no caso de partilhas gerais) registram os materiais coletados
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -42,10 +42,11 @@ class _MateriaisState extends State<Materiais> {
   }
 
   Future<void> _carregarMateriais() async {
+    final profile = await _userProfileService.getUserProfileInfo();
     if (cooperativaUid != null && _prefeituraUid != null) {
-      // ...existing code...
+      setState(() => isLoading = false);
+      return;
     } else {
-      final profile = await _userProfileService.getUserProfileInfo();
       if (profile.role == UserRole.cooperado || profile.role == UserRole.cooperativa) {
         cooperativaUid = profile.cooperativaUid;
         _prefeituraUid = profile.prefeituraUid;
@@ -64,7 +65,27 @@ class _MateriaisState extends State<Materiais> {
     if (doc.exists) {
       final data = doc.data();
       if (data != null && data.containsKey('materiais')) {
-        materiais = Map<String, Map<String, dynamic>>.from(data['materiais']);
+        var allMateriais = Map<String, Map<String, dynamic>>.from(data['materiais']);
+        Map<String, Map<String, dynamic>> filteredMateriais = {};
+
+        if (profile.role == UserRole.cooperado) {
+          allMateriais.forEach((key, value) {
+            if (value['partilha'] == 'Individual') {
+              filteredMateriais[key] = value;
+            }
+          });
+        } else if (profile.role == UserRole.cooperativa) {
+          allMateriais.forEach((key, value) {
+            if (value['partilha'] == 'Geral') {
+              filteredMateriais[key] = value;
+            }
+          });
+        } else {
+          filteredMateriais = allMateriais;
+        }
+        
+        materiais = filteredMateriais;
+
         if (materiais.isNotEmpty) {
           materiaisRows = [MaterialRow(nome: materiais.keys.first, quantidade: 0)];
         }
@@ -198,7 +219,6 @@ class _MateriaisState extends State<Materiais> {
     });
   }
 
-  @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -310,16 +330,17 @@ class _MateriaisState extends State<Materiais> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Materiais4()),
-                    );
-                  },
-                  icon: const Icon(Icons.search),
-                  label: const Text('Conferir materiais coletados'),
-                ),
+                if (materiais.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Materiais4()),
+                      );
+                    },
+                    icon: const Icon(Icons.search),
+                    label: const Text('Conferir materiais coletados'),
+                  ),
                 const SizedBox(height: 16),
                 Align(
                   alignment: Alignment.topRight,
