@@ -24,7 +24,6 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
   String? prefeituraUid;
   bool get viewOnly => widget.viewOnly;
   List<Map<String, dynamic>> partilhas = [];
-  Map<String, dynamic> materiaisPreco = {};
   int selectedPartilhaIndex = 0;
   bool isLoading = true;
 
@@ -55,13 +54,6 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
       setState(() => isLoading = false);
       return;
     }
-    final coopDoc = await FirebaseFirestore.instance
-        .collection('prefeituras')
-        .doc(prefeituraUid)
-        .collection('cooperativas')
-        .doc(cooperativaUid)
-        .get();
-    materiaisPreco = coopDoc.data()?['materiais_preco'] ?? {};
     // Busca partilhas
     final partilhasSnap = await FirebaseFirestore.instance
         .collection('prefeituras')
@@ -87,8 +79,11 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
       );
     }
     final partilhaSelecionada = partilhas[selectedPartilhaIndex];
-    final materiaisQtd = partilhaSelecionada['materiais_qtd'] ?? {};
-    final materiaisPrecoPartilha = partilhaSelecionada['materiais_preco'] ?? {};
+    final materiaisInfo = partilhaSelecionada['materiais'] as Map<String, dynamic>? ?? {};
+    final materiaisIndividuais = partilhaSelecionada['materiais_qtd'] as Map<String, dynamic>? ?? {};
+    final materiaisGerais = partilhaSelecionada['materiaisG_qtd'] as Map<String, dynamic>? ?? {};
+    final allMaterials = {...materiaisIndividuais, ...materiaisGerais};
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Histórico de Partilhas'),
@@ -130,7 +125,7 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
                 ),
                 const SizedBox(height: 16),
                 tableContainer(
-                  child: materiaisQtd.isEmpty
+                  child: allMaterials.isEmpty
                       ? const Padding(
                           padding: EdgeInsets.all(16.0),
                           child: Center(
@@ -158,10 +153,10 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
                                       celulaHeader('Preço (R\$)'),
                                       celulaHeader('Quantidade (kg)'),
                                     ]),
-                                    for (final entry in materiaisQtd.entries)
+                                    for (final entry in allMaterials.entries)
                                       TableRow(children: [
                                         celula(entry.key),
-                                        celula((materiaisPrecoPartilha[entry.key] as num?)
+                                        celula((materiaisInfo[entry.key]?['preco'] as num?)
                                                 ?.toStringAsFixed(2) ??
                                             '-'),
                                         celula(entry.value.toString()),
