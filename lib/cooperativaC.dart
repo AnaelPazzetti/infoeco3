@@ -72,15 +72,10 @@ class _CooperativaState extends State<Cooperativa> {
         'email': _emailController.text,
         'prefeitura_uid': _selectedPrefeituraUid, // Salva o UID da prefeitura escolhida
         'isAprovado': false, // Adicionado campo de aprovação
-        'materiais_preco': {
-          "ALUMINIO DURO": 999.9,
-          "ALUMINIO GROSSO": 999.9,
-          "VIDRO": 999.9
-        },
-        'materiais_qtd': {
-          "ALUMINIO DURO": 0,
-          "ALUMINIO GROSSO": 0,
-          "VIDRO": 0
+        'materiais': {
+          "ALUMINIO DURO": {'preco': 999.9, 'partilha': 'Individual'},
+          "ALUMINIO GROSSO": {'preco': 999.9, 'partilha': 'Individual'},
+          "VIDRO": {'preco': 999.9, 'partilha': 'Individual'}
         }
       });
       // Salva o perfil do usuário na coleção 'users'
