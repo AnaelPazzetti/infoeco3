@@ -211,6 +211,115 @@ class _Materiais3State extends State<Materiais3> {
     );
   }
 
+  Future<void> _realizarPartilhaTotal() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmação'),
+        content: const Text('Tem certeza que deseja realizar a partilha total?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    // Busca materiais_preco
+    final doc = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .get();
+    Map<String, dynamic> materiaisPreco = {};
+    if (doc.exists &&
+        doc.data() != null &&
+        doc.data()!.containsKey('materiais_preco')) {
+      materiaisPreco =
+          Map<String, dynamic>.from(doc['materiais_preco']);
+    }
+    // Cria documento em 'partilhas' da cooperativa
+    await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('partilhas')
+        .add({
+      'materiais_qtd':
+          Map<String, dynamic>.from(materiaisIndividuais),
+      'materiais_preco': materiaisPreco,
+      'data': DateTime.now().toIso8601String(),
+    });
+    // Reseta materiais_qtd da cooperativa para 0
+    final resetMap = Map<String, dynamic>.from(
+        materiaisIndividuais.map((k, v) => MapEntry(k, 0)));
+    await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .update({'materiais_qtd': resetMap});
+    // Para cada cooperado, reseta materiais_qtd e salva em subcoleção 'partilhas'
+    final cooperadosSnapshot = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('cooperados')
+        .get();
+    for (final cooperadoDoc in cooperadosSnapshot.docs) {
+      final materiaisQtdCooperado =
+          Map<String, dynamic>.from(
+              cooperadoDoc.data()['materiais_qtd'] ?? {});
+      // Cria documento em 'partilhas' do cooperado
+      final partilhaRef = await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(prefeituraUid)
+          .collection('cooperativas')
+          .doc(cooperativaUid)
+          .collection('cooperados')
+          .doc(cooperadoDoc.id)
+          .collection('partilhas')
+          .add({
+        'materiais_qtd': materiaisQtdCooperado,
+        'materiais_preco': materiaisPreco,
+        'data': DateTime.now().toIso8601String(),
+      });
+      // Salva o UID da partilha da cooperativa no documento do cooperado
+      await partilhaRef.update({
+        'cooperativa_partilha_uid': partilhaRef.id,
+      });
+      // Reseta materiais_qtd e valor_partilha do cooperado para 0
+      final resetCoopMap = Map<String, dynamic>.from(
+          materiaisQtdCooperado.map((k, v) => MapEntry(k, 0)));
+      await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(prefeituraUid)
+          .collection('cooperativas')
+          .doc(cooperativaUid)
+          .collection('cooperados')
+          .doc(cooperadoDoc.id)
+          .update({
+        'materiais_qtd': resetCoopMap,
+        'valor_partilha': 0
+      });
+    }
+    await _carregarMateriaisQtd(); // Recarrega os dados para atualizar a tabela
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text(
+              'Partilha total realizada e materiais resetados!')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -263,6 +372,20 @@ class _Materiais3State extends State<Materiais3> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: viewOnly ? null : _realizarPartilhaTotal,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    minimumSize: const Size(250, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  child: const Text('Realizar partilha total',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 16),
                 DataTable(
                   columns: const [
                     DataColumn(label: Text('Material')),
@@ -288,135 +411,6 @@ class _Materiais3State extends State<Materiais3> {
               ],
             ),
           ),
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 16.0),
-        child: ElevatedButton(
-          onPressed: viewOnly
-              ? null
-              : () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Confirmação'),
-                      content: const Text(
-                          'Tem certeza que deseja realizar a partilha total?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange),
-                          child: const Text('Confirmar'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    // Busca materiais_preco
-                    final doc = await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .get();
-                    Map<String, dynamic> materiaisPreco = {};
-                    if (doc.exists &&
-                        doc.data() != null &&
-                        doc.data()!.containsKey('materiais_preco')) {
-                      materiaisPreco = Map<String, dynamic>.from(
-                          doc['materiais_preco']);
-                    }
-                    // Cria documento em 'partilhas' da cooperativa
-                    await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .collection('partilhas')
-                        .add({
-                      'materiais_qtd':
-                          Map<String, dynamic>.from(materiaisIndividuais),
-                      'materiais_preco': materiaisPreco,
-                      'data': DateTime.now().toIso8601String(),
-                    });
-                    // Reseta materiais_qtd da cooperativa para 0
-                    final resetMap = Map<String, dynamic>.from(
-                        materiaisIndividuais.map((k, v) => MapEntry(k, 0)));
-                    await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .update({'materiais_qtd': resetMap});
-                    // Para cada cooperado, reseta materiais_qtd e salva em subcoleção 'partilhas'
-                    final cooperadosSnapshot = await FirebaseFirestore
-                        .instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .collection('cooperados')
-                        .get();
-                    for (final cooperadoDoc in cooperadosSnapshot.docs) {
-                      final materiaisQtdCooperado =
-                          Map<String, dynamic>.from(
-                              cooperadoDoc.data()['materiais_qtd'] ?? {});
-                      // Cria documento em 'partilhas' do cooperado
-                      final partilhaRef = await FirebaseFirestore.instance
-                          .collection('prefeituras')
-                          .doc(prefeituraUid)
-                          .collection('cooperativas')
-                          .doc(cooperativaUid)
-                          .collection('cooperados')
-                          .doc(cooperadoDoc.id)
-                          .collection('partilhas')
-                          .add({
-                        'materiais_qtd': materiaisQtdCooperado,
-                        'materiais_preco': materiaisPreco,
-                        'data': DateTime.now().toIso8601String(),
-                      });
-                      // Salva o UID da partilha da cooperativa no documento do cooperado
-                      await partilhaRef.update({
-                        'cooperativa_partilha_uid': partilhaRef.id,
-                      });
-                      // Reseta materiais_qtd e valor_partilha do cooperado para 0
-                      final resetCoopMap = Map<String, dynamic>.from(
-                          materiaisQtdCooperado.map((k, v) => MapEntry(k, 0)));
-                      await FirebaseFirestore.instance
-                          .collection('prefeituras')
-                          .doc(prefeituraUid)
-                          .collection('cooperativas')
-                          .doc(cooperativaUid)
-                          .collection('cooperados')
-                          .doc(cooperadoDoc.id)
-                          .update({
-                        'materiais_qtd': resetCoopMap,
-                        'valor_partilha': 0
-                      });
-                    }
-                    await _carregarMateriaisQtd(); // Recarrega os dados para atualizar a tabela
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Partilha total realizada e materiais resetados!')),
-                    );
-                  }
-                },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            minimumSize: const Size(250, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-          ),
-          child: const Text('Realizar partilha total',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ),
       ),
     );
