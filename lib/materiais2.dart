@@ -104,6 +104,102 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
     setState(() => isLoading = false);
   }
 
+  // Edita um material existente
+  Future<void> _editarMaterial(String oldName, double oldPreco, String oldPartilha) async {
+    final TextEditingController nomeController = TextEditingController(text: oldName);
+    final TextEditingController valorController = TextEditingController(text: oldPreco.toString());
+    String? tipoPartilha = oldPartilha;
+
+    final result = await showDialog<Map<String, dynamic>> (
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Editar Material'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nomeController,
+                    decoration: const InputDecoration(labelText: 'Nome do Material'),
+                  ),
+                  TextField(
+                    controller: valorController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Valor/kg'),
+                  ),
+                  DropdownButton<String>(
+                    hint: const Text('Tipo de Partilha'),
+                    value: tipoPartilha,
+                    items: <String>['Individual', 'Geral'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        tipoPartilha = newValue;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final nome = nomeController.text.trim();
+                    final valor = double.tryParse(valorController.text.trim());
+                    if (nome.isNotEmpty && valor != null && tipoPartilha != null) {
+                      Navigator.pop(context, {'nome': nome, 'valor': valor, 'partilha': tipoPartilha});
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Preencha todos os campos!')),
+                      );
+                    }
+                  },
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() => isLoading = true);
+      final newName = result['nome'];
+      final newValor = result['valor'];
+      final newPartilha = result['partilha'];
+
+      // Se o nome do material mudou, remova o antigo
+      if (oldName != newName) {
+        materiais.remove(oldName);
+      }
+      
+      materiais[newName] = {
+        'preco': newValor,
+        'partilha': newPartilha,
+      };
+
+      await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(prefeituraUid)
+          .collection('cooperativas')
+          .doc(cooperativaUid)
+          .update({'materiais': materiais});
+      
+      await _carregarMateriais();
+      setState(() => isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -140,9 +236,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
                                 IconButton(
                                   icon: const Icon(Icons.edit, color: Colors.blue),
                                   tooltip: 'Editar',
-                                  onPressed: viewOnly ? null : () async {
-                                    // Implementar a lógica de edição aqui se necessário
-                                  },
+                                  onPressed: viewOnly ? null : () => _editarMaterial(entry.key, entry.value['preco'], entry.value['partilha']),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete, color: Colors.red),
@@ -196,48 +290,51 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
                 children: [
                   const Text('Adicionar Novo Material', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 200,
-                        child: TextField(
-                          controller: _nomeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nome do Material',
-                            border: OutlineInputBorder(),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 500),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 16.0,
+                      runSpacing: 16.0,
+                      children: [
+                        SizedBox(
+                          width: 200,
+                          child: TextField(
+                            controller: _nomeController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nome do Material',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: 120,
-                        child: TextField(
-                          controller: _valorController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Valor/kg',
-                            border: OutlineInputBorder(),
+                        SizedBox(
+                          width: 120,
+                          child: TextField(
+                            controller: _valorController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Valor/kg',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      DropdownButton<String>(
-                        hint: const Text('Tipo de Partilha'),
-                        value: _tipoPartilha,
-                        items: <String>['Individual', 'Geral'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _tipoPartilha = newValue;
-                          });
-                        },
-                      ),
-                    ],
+                        DropdownButton<String>(
+                          hint: const Text('Tipo de Partilha'),
+                          value: _tipoPartilha,
+                          items: <String>['Individual', 'Geral'].map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _tipoPartilha = newValue;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
