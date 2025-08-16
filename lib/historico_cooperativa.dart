@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
+import 'package:infoeco3/csv_exporter.dart';
 
 class HistoricoCooperativa extends StatefulWidget {
   final String? cooperativaUid;
@@ -67,6 +68,24 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
     setState(() => isLoading = false);
   }
 
+  void _exportToCsv(Map<String, dynamic> allMaterials, Map<String, dynamic> materiaisInfo) {
+    final headers = ['Material', 'Preço (Reais)', 'Quantidade (kg)'];
+    final rows = allMaterials.entries.map((entry) {
+      final material = entry.key;
+      final precoRaw = materiaisInfo[entry.key]?['preco'];
+      final preco = (precoRaw is num) ? precoRaw.toStringAsFixed(2) : '-';
+      final quantidade = entry.value.toString();
+      return [material, preco, quantidade];
+    }).toList();
+
+    CsvExporter.exportData(
+      context,
+      headers: headers,
+      rows: rows,
+      fileName: 'historico_partilhas',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -88,6 +107,12 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
       appBar: AppBar(
         title: const Text('Histórico de Partilhas'),
         backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () => _exportToCsv(allMaterials, materiaisInfo),
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(

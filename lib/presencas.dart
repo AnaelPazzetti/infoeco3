@@ -1,4 +1,4 @@
-//Cooperado registra sua presenca, entrada e saida 
+//Cooperado registra sua presenca, entrada e saida
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,22 +6,32 @@ import 'package:infoeco3/menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
+import 'package:infoeco3/csv_exporter.dart';
 
 // Tela principal para exibir presenças
 class Presencas extends StatefulWidget {
-  const Presencas({super.key});
+  const Presencas({Key? key}) : super(key: key);
 
-  @override
-  State<Presencas> createState() => _Presencas();
+    State<Presencas> createState() => _Presencas();
 }
 
 class _Presencas extends State<Presencas> {
-  @override
+  final GlobalKey<_WidgetTableState> _widgetTableKey = GlobalKey<_WidgetTableState>();
+
+  
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Tabela de Presença"),
         backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              _widgetTableKey.currentState?.exportCsv();
+            },
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -29,7 +39,7 @@ class _Presencas extends State<Presencas> {
           padding: const EdgeInsets.all(16.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
-            child: WidgetTable(),
+            child: WidgetTable(key: _widgetTableKey),
           ),
         ),
       ),
@@ -41,12 +51,13 @@ class _Presencas extends State<Presencas> {
 class WidgetTable extends StatefulWidget {
   const WidgetTable({super.key});
 
-  @override
-  State<WidgetTable> createState() => _WidgetTable();
+  
+  State<WidgetTable> createState() => _WidgetTableState();
 }
 
-class _WidgetTable extends State<WidgetTable> {
+class _WidgetTableState extends State<WidgetTable> {
   final UserProfileService _userProfileService = UserProfileService();
+  List<QueryDocumentSnapshot> _docs = [];
   String? nomeCooperado;
   String? uid;
   String? cooperativaUid;
@@ -58,7 +69,26 @@ class _WidgetTable extends State<WidgetTable> {
   bool loading = true;
   int _limiteHistorico = 7; // Limite padrão de presenças exibidas
 
-  @override
+  void exportCsv() {
+    final headers = ['NOME', 'DATA', 'ENTRADA', 'SAÍDA', 'HORAS TRABALHADAS'];
+    final rows = _docs.map((doc) {
+      final nome = (doc['nome'] ?? '').toString();
+      final data = (doc['data'] ?? '').toString();
+      final entrada = (doc['entrada'] != null ? _formatarHora(DateTime.parse(doc['entrada'])) : '-').toString();
+      final saida = (doc['saida'] != null ? _formatarHora(DateTime.parse(doc['saida'])) : '-').toString();
+      final horas = (doc['horas_trabalhadas'] ?? '-').toString();
+      return [nome, data, entrada, saida, horas];
+    }).toList();
+
+    CsvExporter.exportData(
+      context,
+      headers: headers,
+      rows: rows,
+      fileName: 'presencas',
+    );
+  }
+
+  
   void initState() {
     super.initState();
     _carregarDadosUsuario();
@@ -70,9 +100,12 @@ class _WidgetTable extends State<WidgetTable> {
     final profile = await _userProfileService.getUserProfileInfo();
     if (profile.role == UserRole.cooperado && profile.cooperadoUid != null) {
       final docCooperado = await FirebaseFirestore.instance
-          .collection('prefeituras').doc(profile.prefeituraUid)
-          .collection('cooperativas').doc(profile.cooperativaUid)
-          .collection('cooperados').doc(profile.cooperadoUid)
+          .collection('prefeituras')
+          .doc(profile.prefeituraUid)
+          .collection('cooperativas')
+          .doc(profile.cooperativaUid)
+          .collection('cooperados')
+          .doc(profile.cooperadoUid)
           .get();
 
       nomeCooperado = docCooperado.data()?['nome'] ?? '';
@@ -82,7 +115,9 @@ class _WidgetTable extends State<WidgetTable> {
       isCooperado = true;
     }
 
-    setState(() { loading = false; });
+    setState(() {
+      loading = false;
+    });
   }
 
   // Carrega a entrada salva localmente (caso o usuário saia da tela)
@@ -225,6 +260,7 @@ class _WidgetTable extends State<WidgetTable> {
               return eb.compareTo(ea);
             });
             final limitedDocs = _limiteHistorico == -1 ? docs : docs.take(_limiteHistorico).toList();
+            _docs = limitedDocs;
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
@@ -242,7 +278,7 @@ class _WidgetTable extends State<WidgetTable> {
                       DataCell(Text(doc['data'] ?? '')),
                       DataCell(Text(doc['entrada'] != null ? _formatarHora(DateTime.parse(doc['entrada'])) : '-')),
                       DataCell(Text(doc['saida'] != null ? _formatarHora(DateTime.parse(doc['saida'])) : '-')),
-                      DataCell(Text(doc['horas_trabalhadas'] ?? '-')),
+                      DataCell(Text(doc['horas_trabalhadas'] ?? '')),
                     ]),
                 ],
               ),
@@ -253,7 +289,7 @@ class _WidgetTable extends State<WidgetTable> {
     );
   }
 
-  @override
+  
   Widget build(BuildContext context) {
     if (loading) {
       return const Center(child: CircularProgressIndicator());
@@ -366,9 +402,9 @@ class _WidgetTable extends State<WidgetTable> {
             );
           },
           style: ButtonStyle(
-            minimumSize: MaterialStateProperty.all(const Size(150, 75)),
-            backgroundColor: MaterialStateProperty.all(Colors.orange),
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+            minimumSize: WidgetStateProperty.all(const Size(150, 75)),
+            backgroundColor: WidgetStateProperty.all(Colors.orange),
+            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
               RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),

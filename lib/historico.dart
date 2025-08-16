@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
 import 'user_profile_service.dart'; // Importa o serviço de perfil de usuário
+import 'package:infoeco3/csv_exporter.dart';
 
 class Historico extends StatefulWidget {
   const Historico({super.key});
@@ -57,6 +58,23 @@ class _HistoricoState extends State<Historico> {
     setState(() => isLoading = false);
   }
 
+  void _exportToCsv(Map<String, dynamic> materiaisQtd, Map<String, dynamic> materiaisPreco) {
+    final headers = ['Material', 'Preço (Reais)', 'Quantidade (kg)'];
+    final rows = materiaisQtd.entries.map((entry) {
+      final material = entry.key;
+      final preco = materiaisPreco[entry.key]?.toString() ?? '-';
+      final quantidade = entry.value.toString();
+      return [material, preco, quantidade];
+    }).toList();
+
+    CsvExporter.exportData(
+      context,
+      headers: headers,
+      rows: rows,
+      fileName: 'historico_partilhas',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -73,7 +91,30 @@ class _HistoricoState extends State<Historico> {
     final materiaisPreco = partilhaSelecionada['materiais_preco'] ?? {};
     final valorPartilha = partilhaSelecionada['valor_partilha'] ?? 0;
     return Scaffold(
-      appBar: AppBar(title: const Text('Histórico de Partilhas')),
+      appBar: AppBar(
+        title: const Text('Histórico de Partilhas'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              final headers = ['Material', 'Preço (Reais)', 'Quantidade (kg)'];
+              final rows = materiaisQtd.entries.map((entry) {
+                final material = entry.key;
+                final preco = materiaisPreco[entry.key]?.toString() ?? '-';
+                final quantidade = entry.value.toString();
+                return [material, preco, quantidade];
+              }).toList();
+
+              CsvExporter.exportData(
+                context,
+                headers: headers,
+                rows: rows,
+                fileName: 'historico_partilhas',
+              );
+            },
+          ),
+        ],
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final double tableWidth = constraints.maxWidth * 0.95;

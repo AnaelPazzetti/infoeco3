@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
+import 'package:infoeco3/csv_exporter.dart';
 
 class Materiais2Screen extends StatefulWidget {
   final String? cooperativaUid;
@@ -33,6 +34,26 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
     cooperativaUid = widget.cooperativaUid;
     prefeituraUid = widget.prefeituraUid;
     _carregarMateriais();
+  }
+
+  Future<void> _exportMateriaisCsv() async {
+    List<String> headers = ['Material', 'Valor/kg', 'Tipo de Partilha'];
+    List<List<String>> rows = [];
+
+    materiais.forEach((nome, dados) {
+      rows.add([
+        nome,
+        dados['preco'].toStringAsFixed(2),
+        dados['partilha'],
+      ]);
+    });
+
+    await CsvExporter.exportData(
+      context,
+      headers: headers,
+      rows: rows,
+      fileName: 'materiais_cooperativa',
+    );
   }
 
   // Carrega os materiais e preços da cooperativa logada
@@ -206,7 +227,17 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Gerenciar Materiais')),
+      appBar: AppBar(
+        title: const Text('Gerenciar Materiais'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              _exportMateriaisCsv();
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(

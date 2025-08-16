@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
+import 'package:infoeco3/csv_exporter.dart';
 
 class Materiais4 extends StatefulWidget {
   const Materiais4({super.key});
@@ -62,7 +63,33 @@ class _Materiais4State extends State<Materiais4> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Materiais Coletados')),
+      appBar: AppBar(
+        title: const Text('Materiais Coletados'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              final headers = ['Tipo', 'Material', 'Quantidade (kg)'];
+              final rows = <List<String>>[];
+
+              materiaisQtd.forEach((key, value) {
+                rows.add(['Individual', key, value.toString()]);
+              });
+
+              materiaisGQtd.forEach((key, value) {
+                rows.add(['Geral', key, value.toString()]);
+              });
+
+              CsvExporter.exportData(
+                context,
+                headers: headers,
+                rows: rows,
+                fileName: 'meus_materiais',
+              );
+            },
+          ),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:infoeco3/menu.dart';
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
+import 'package:infoeco3/csv_exporter.dart';
 
 class PresencasCooperativa extends StatefulWidget {
   final String? cooperativaUid;
@@ -21,6 +22,7 @@ class PresencasCooperativa extends StatefulWidget {
 
 class _PresencasCooperativaState extends State<PresencasCooperativa> {
   final UserProfileService _userProfileService = UserProfileService();
+  List<QueryDocumentSnapshot> _docs = [];
   String? cooperativaUid;
   String? prefeituraUid;
   bool get viewOnly => widget.viewOnly;
@@ -74,6 +76,30 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Presenças da Cooperativa'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              final headers = ['NOME', 'DATA', 'ENTRADA', 'SAÍDA', 'HORAS TRABALHADAS', 'APROVADO'];
+              final rows = _docs.map((doc) {
+                final nome = doc['nome'] ?? '';
+                final data = doc['data'] ?? '';
+                final entrada = doc['entrada'] != null ? _formatarHora(doc['entrada']) : '-';
+                final saida = doc['saida'] != null ? _formatarHora(doc['saida']) : '-';
+                final horas = doc['horas_trabalhadas'] ?? '-';
+                final aprovado = (doc.data() as Map<String, dynamic>).containsKey('aprovado pelo presidente') && doc['aprovado pelo presidente'] == true ? 'Sim' : 'Não';
+                return [nome, data, entrada, saida, horas, aprovado];
+              }).toList();
+
+              CsvExporter.exportData(
+                context,
+                headers: headers,
+                rows: rows.map((row) => row.map((e) => e.toString()).toList()).toList(),
+                fileName: 'presencas_cooperativa',
+              );
+            },
+          ),
+        ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -161,6 +187,7 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
                           return eb.compareTo(ea);
                         });
                         final limitedDocs = _limiteHistorico == -1 ? docs : docs.take(_limiteHistorico).toList();
+                        _docs = List<QueryDocumentSnapshot>.from(limitedDocs);
                         return Center(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
