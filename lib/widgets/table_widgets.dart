@@ -34,7 +34,6 @@ Widget celulaHeader(String texto) {
     alignment: Alignment.center,
     padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
     decoration: BoxDecoration(
-      color: Colors.green[100],
       border: Border(
         bottom: BorderSide(color: Colors.grey[300]!),
         right: BorderSide(color: Colors.grey[300]!),

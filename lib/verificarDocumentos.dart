@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:infoeco3/widgets/table_widgets.dart';
 import 'user_profile_service.dart'; // Import the new service
 
 // Define DisplayItem classes
@@ -215,18 +216,6 @@ class _VerificarDocumentosState extends State<VerificarDocumentos> {
     }
   }
 
-  Widget celulaHeader(String texto) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      color: Colors.grey[300],
-      child: Text(
-        texto,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
   // Adiciona método para confirmar e excluir arquivo
   void _confirmDeleteFile(DisplayItem item) async {
     if (item is! FileItem) return;
@@ -249,7 +238,7 @@ class _VerificarDocumentosState extends State<VerificarDocumentos> {
     );
     if (confirm == true) {
       try {
-        await item.ref.delete();
+        await (item as FileItem).ref.delete();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Arquivo "${item.name}" excluído com sucesso.')),
         );
@@ -269,41 +258,40 @@ class _VerificarDocumentosState extends State<VerificarDocumentos> {
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Verificar Documentos')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.8;
-          return Center(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: tableWidth,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: DataTable(
-                    columns: [
-                      DataColumn(label: celulaHeader('Documento')),
-                      DataColumn(label: celulaHeader('Data de Upload')),
-                      DataColumn(label: celulaHeader('Tipo')),
-                      DataColumn(label: celulaHeader('Ações')),
-                    ],
-                    rows: _displayItems.map((item) {
-                      return DataRow(cells: [
-                        // Documento (icon + name)
-                        DataCell(Row(
-                          children: [
-                            Icon(item.isFolder ? Icons.folder : Icons.insert_drive_file, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                item.name,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 14),
-                              ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.95),
+            child: tableContainer(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: [
+                    DataColumn(label: celulaHeader('Documento')),
+                    DataColumn(label: celulaHeader('Data de Upload')),
+                    DataColumn(label: celulaHeader('Tipo')),
+                    DataColumn(label: celulaHeader('Ações')),
+                  ],
+                  rows: _displayItems.map((item) {
+                    return DataRow(cells: [
+                      // Documento (icon + name)
+                      DataCell(Row(
+                        children: [
+                          Icon(item.isFolder ? Icons.folder : Icons.insert_drive_file, size: 20),
+                          const SizedBox(width: 8),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 300),
+                            child: Text(
+                              item.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14),
                             ),
-                          ],
-                        )),
-                        // Data de Upload (only for files)
-                        DataCell(item.isFolder
+                          ),
+                        ],
+                      )),
+                      // Data de Upload (only for files)
+                      DataCell(item.isFolder
                           ? const Text('-', style: TextStyle(fontSize: 14))
                           : FutureBuilder<FullMetadata>(
                               future: (item as FileItem).ref.getMetadata(),
@@ -318,17 +306,16 @@ class _VerificarDocumentosState extends State<VerificarDocumentos> {
                                 }
                                 return const Text('-', style: TextStyle(fontSize: 14));
                               },
-                            ),
-                        ),
-                        // Tipo (extension or Pasta)
-                        DataCell(Text(
-                          item.isFolder
+                            )),
+                      // Tipo (extension or Pasta)
+                      DataCell(Text(
+                        item.isFolder
                             ? 'Pasta'
                             : (item.name.contains('.') ? '.${item.name.split('.').last}' : 'Arquivo'),
-                          style: const TextStyle(fontSize: 14),
-                        )),
-                        // Ações
-                        DataCell(item.isFolder
+                        style: const TextStyle(fontSize: 14),
+                      )),
+                      // Ações
+                      DataCell(item.isFolder
                           ? ElevatedButton(
                               onPressed: () => _handleItemTap(item),
                               child: const Text('Abrir'),
@@ -347,18 +334,15 @@ class _VerificarDocumentosState extends State<VerificarDocumentos> {
                                   tooltip: 'Excluir',
                                 ),
                               ],
-                            ),
-                        ),
-                      ]);
-                    }).toList(),
-                  ),
+                            )),
+                    ]);
+                  }).toList(),
                 ),
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
-      // ...existing code...
     );
   }
 }

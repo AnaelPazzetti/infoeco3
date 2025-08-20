@@ -12,33 +12,10 @@ class Login extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Login', // Título do aplicativo
-      theme: ThemeData(
-        primarySwatch: Colors.green, // Tema principal com cor verde
-      ),
-      home: const MyHomePage(title: 'InfoEco'), // Página inicial
-    );
-  }
-}
-
-// Página inicial do login
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       // AppBar com o título da página
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const Text('Login'), // Use a fixed title or pass it if needed
       ),
 
       // Corpo da tela com botões de login
