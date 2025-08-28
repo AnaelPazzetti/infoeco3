@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:infoeco3/menu.dart';
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
-import 'package:infoeco3/csv_exporter.dart';
+import 'package:infoeco3/xlsx_exporter.dart';
 
 class PresencasCooperativa extends StatefulWidget {
   final String? cooperativaUid;
@@ -91,7 +91,7 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
                 return [nome, data, entrada, saida, horas, aprovado];
               }).toList();
 
-              CsvExporter.exportData(
+              XlsxExporter.exportData(
                 context,
                 headers: headers,
                 rows: rows.map((row) => row.map((e) => e.toString()).toList()).toList(),

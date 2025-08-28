@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
 import 'user_profile_service.dart'; // Importa o serviço de perfil de usuário
-import 'package:infoeco3/csv_exporter.dart';
+import 'package:infoeco3/xlsx_exporter.dart';
 
 class Historico extends StatefulWidget {
   const Historico({super.key});
@@ -67,7 +67,7 @@ class _HistoricoState extends State<Historico> {
       return [material, preco, quantidade];
     }).toList();
 
-    CsvExporter.exportData(
+    XlsxExporter.exportData(
       context,
       headers: headers,
       rows: rows,
@@ -105,7 +105,7 @@ class _HistoricoState extends State<Historico> {
                 return [material, preco, quantidade];
               }).toList();
 
-              CsvExporter.exportData(
+              XlsxExporter.exportData(
                 context,
                 headers: headers,
                 rows: rows,

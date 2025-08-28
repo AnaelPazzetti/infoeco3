@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
-import 'package:infoeco3/csv_exporter.dart';
+import 'package:infoeco3/xlsx_exporter.dart';
 
 class HistoricoCooperativa extends StatefulWidget {
   final String? cooperativaUid;
@@ -78,7 +78,7 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
       return [material, preco, quantidade];
     }).toList();
 
-    CsvExporter.exportData(
+    XlsxExporter.exportData(
       context,
       headers: headers,
       rows: rows,

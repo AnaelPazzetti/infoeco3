@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
-import 'package:infoeco3/csv_exporter.dart';
+import 'package:infoeco3/xlsx_exporter.dart';
 
 class Materiais2Screen extends StatefulWidget {
   final String? cooperativaUid;
@@ -48,7 +48,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
       ]);
     });
 
-    await CsvExporter.exportData(
+    await XlsxExporter.exportData(
       context,
       headers: headers,
       rows: rows,

@@ -6,7 +6,7 @@ import 'package:infoeco3/menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:infoeco3/user_profile_service.dart';
 import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
-import 'package:infoeco3/csv_exporter.dart';
+import 'package:infoeco3/xlsx_exporter.dart';
 
 // Tela principal para exibir presenças
 class Presencas extends StatefulWidget {
@@ -80,7 +80,7 @@ class _WidgetTableState extends State<WidgetTable> {
       return [nome, data, entrada, saida, horas];
     }).toList();
 
-    CsvExporter.exportData(
+    XlsxExporter.exportData(
       context,
       headers: headers,
       rows: rows,
