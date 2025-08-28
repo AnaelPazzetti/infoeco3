@@ -1,8 +1,5 @@
 // Este arquivo implementa a tela de configurações.
 // Ele contém botões para acessar funcionalidades como troca de senha, notificações, ajuda e sair.
-
-// ignore_for_file: library_private_types_in_public_api
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Importa o Firebase Auth
 import 'package:infoeco3/main.dart'; // Importa a tela principal para redirecionamento
