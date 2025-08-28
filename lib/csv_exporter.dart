@@ -1,5 +1,6 @@
 
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:csv/csv.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
@@ -20,7 +21,7 @@ class CsvExporter {
       String csv = const ListToCsvConverter().convert(allRows);
 
       // Convert to Uint8List
-      final Uint8List bytes = Uint8List.fromList(csv.codeUnits);
+      final Uint8List bytes = Uint8List.fromList(utf8.encode(csv));
 
       if (kIsWeb) {
         // Save the file for web
@@ -37,7 +38,7 @@ class CsvExporter {
         final file = File(path);
         await file.writeAsBytes(bytes);
 
-        final result = await OpenFile.open(path);
+        final result = await OpenFile.open(path, type: 'text/csv');
         if (result.type != ResultType.done) {
           throw Exception('Could not open file');
         }
