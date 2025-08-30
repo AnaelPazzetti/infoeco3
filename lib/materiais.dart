@@ -211,6 +211,7 @@ class _MateriaisState extends State<Materiais> {
     }
 
     await _atualizarValorPartilha();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Material enviado com sucesso!')),
     );
@@ -219,152 +220,249 @@ class _MateriaisState extends State<Materiais> {
     });
   }
 
+  @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Registrar Materiais')),
-      body: Center(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          padding: const EdgeInsets.all(16.0),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.95),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Valor/kg', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Quantidade', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Valor', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Enviar', style: TextStyle(fontWeight: FontWeight.bold))),
-                    ],
-                    rows: [
-                      for (int i = 0; i < materiaisRows.length; i++)
-                        DataRow(cells: [
-                          DataCell(
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: DropdownButton<String>(
-                                    value: materiaisRows[i].nome,
-                                    isExpanded: true,
-                                    items: materiais.keys.map((nome) {
-                                      return DropdownMenuItem(
-                                        value: nome,
-                                        child: Tooltip(
-                                          message: nome,
-                                          child: Text(
-                                            nome,
-                                            overflow: TextOverflow.visible,
-                                            softWrap: false,
-                                            maxLines: 1,
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                    selectedItemBuilder: (context) {
-                                      return materiais.keys.map((nome) {
-                                        return Tooltip(
-                                          message: nome,
-                                          child: Text(
-                                            nome,
-                                            overflow: TextOverflow.visible,
-                                            softWrap: false,
-                                            maxLines: 1,
-                                          ),
-                                        );
-                                      }).toList();
-                                    },
-                                    onChanged: viewOnly
-                                        ? null
-                                        : (value) {
-                                            if (value != null) {
-                                              setState(() {
-                                                materiaisRows[i].nome = value;
-                                              });
-                                            }
-                                          },
-                                  ),
-                                ),
-                              ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          bool useWideLayout = constraints.maxWidth > 600;
+          return Center(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              padding: const EdgeInsets.all(16.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.95),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    useWideLayout ? _buildWideLayout() : _buildNarrowLayout(),
+                    const SizedBox(height: 16),
+                    if (materiais.isNotEmpty)
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => Materiais4()),
+                          );
+                        },
+                        icon: const Icon(Icons.search),
+                        label: const Text('Conferir materiais coletados'),
+                      ),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.green[100],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          child: Text(
+                            'Valor aproximado da partilha: R\$ ${valorPartilha.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                              fontSize: 16,
                             ),
                           ),
-                          DataCell(Text((materiais[materiaisRows[i].nome]?['preco'] ?? 0).toStringAsFixed(2))),
-                          DataCell(
-                            SizedBox(
-                              width: 80,
-                              child: TextFormField(
-                                initialValue: materiaisRows[i].quantidade == 0 ? '' : materiaisRows[i].quantidade.toString(),
-                                keyboardType: TextInputType.number,
-                                onChanged: viewOnly
-                                    ? null
-                                    : (value) {
-                                        setState(() {
-                                          materiaisRows[i].quantidade = double.tryParse(value) ?? 0;
-                                        });
-                                      },
-                                enabled: !viewOnly,
-                                decoration: const InputDecoration(
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                ),
-                              ),
-                            ),
-                          ),
-                          DataCell(Text(_calcularValor(materiaisRows[i].nome, materiaisRows[i].quantidade).toStringAsFixed(2))),
-                          DataCell(
-                            ElevatedButton(
-                              onPressed: viewOnly ? null : () => _enviarDadosMaterial(i),
-                              child: const Text('Enviar'),
-                            ),
-                          ),
-                        ]),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (materiais.isNotEmpty)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => Materiais4()),
-                      );
-                    },
-                    icon: const Icon(Icons.search),
-                    label: const Text('Conferir materiais coletados'),
-                  ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.green[100],
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                      child: Text(
-                        'Valor aproximado da partilha: R\$ ${valorPartilha.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                          fontSize: 16,
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWideLayout() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Valor/kg', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Quantidade', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Valor', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Enviar', style: TextStyle(fontWeight: FontWeight.bold))),
+        ],
+        rows: [
+          for (int i = 0; i < materiaisRows.length; i++)
+            DataRow(cells: [
+              DataCell(
+                Row(
+                  children: [
+                    Flexible(
+                      child: DropdownButton<String>(
+                        value: materiaisRows[i].nome,
+                        isExpanded: true,
+                        items: materiais.keys.map((nome) {
+                          return DropdownMenuItem(
+                            value: nome,
+                            child: Tooltip(
+                              message: nome,
+                              child: Text(
+                                nome,
+                                overflow: TextOverflow.visible,
+                                softWrap: false,
+                                maxLines: 1,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        selectedItemBuilder: (context) {
+                          return materiais.keys.map((nome) {
+                            return Tooltip(
+                              message: nome,
+                              child: Text(
+                                nome,
+                                overflow: TextOverflow.visible,
+                                softWrap: false,
+                                maxLines: 1,
+                              ),
+                            );
+                          }).toList();
+                        },
+                        onChanged: viewOnly
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    materiaisRows[i].nome = value;
+                                  });
+                                }
+                              },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              DataCell(Text((materiais[materiaisRows[i].nome]?['preco'] ?? 0).toStringAsFixed(2))),
+              DataCell(
+                SizedBox(
+                  width: 80,
+                  child: TextFormField(
+                    initialValue: materiaisRows[i].quantidade == 0 ? '' : materiaisRows[i].quantidade.toString(),
+                    keyboardType: TextInputType.number,
+                    onChanged: viewOnly
+                        ? null
+                        : (value) {
+                            setState(() {
+                              materiaisRows[i].quantidade = double.tryParse(value) ?? 0;
+                            });
+                          },
+                    enabled: !viewOnly,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    ),
+                  ),
+                ),
+              ),
+              DataCell(Text(_calcularValor(materiaisRows[i].nome, materiaisRows[i].quantidade).toStringAsFixed(2))),
+              DataCell(
+                ElevatedButton(
+                  onPressed: viewOnly ? null : () => _enviarDadosMaterial(i),
+                  child: const Text('Enviar'),
+                ),
+              ),
+            ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNarrowLayout() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: materiaisRows.length,
+      itemBuilder: (context, i) {
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildNarrowRow('Material', DropdownButton<String>(
+                  value: materiaisRows[i].nome,
+                  isExpanded: true,
+                  items: materiais.keys.map((nome) {
+                    return DropdownMenuItem(
+                      value: nome,
+                      child: Tooltip(
+                        message: nome,
+                        child: Text(
+                          nome,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: viewOnly
+                      ? null
+                      : (value) {
+                          if (value != null) {
+                            setState(() {
+                              materiaisRows[i].nome = value;
+                            });
+                          }
+                        },
+                )),
+                _buildNarrowRow('Valor/kg', Text((materiais[materiaisRows[i].nome]?['preco'] ?? 0).toStringAsFixed(2))),
+                _buildNarrowRow('Quantidade', SizedBox(
+                  width: 100,
+                  child: TextFormField(
+                    initialValue: materiaisRows[i].quantidade == 0 ? '' : materiaisRows[i].quantidade.toString(),
+                    keyboardType: TextInputType.number,
+                    onChanged: viewOnly
+                        ? null
+                        : (value) {
+                            setState(() {
+                              materiaisRows[i].quantidade = double.tryParse(value) ?? 0;
+                            });
+                          },
+                    enabled: !viewOnly,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    ),
+                  ),
+                )),
+                _buildNarrowRow('Valor', Text(_calcularValor(materiaisRows[i].nome, materiaisRows[i].quantidade).toStringAsFixed(2))),
+                const SizedBox(height: 16),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: viewOnly ? null : () => _enviarDadosMaterial(i),
+                    child: const Text('Enviar'),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNarrowRow(String label, Widget child) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          child,
+        ],
       ),
     );
   }

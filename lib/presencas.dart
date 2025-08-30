@@ -12,13 +12,15 @@ import 'package:infoeco3/xlsx_exporter.dart';
 class Presencas extends StatefulWidget {
   const Presencas({Key? key}) : super(key: key);
 
-    State<Presencas> createState() => _Presencas();
+  @override
+  State<Presencas> createState() => _Presencas();
 }
 
 class _Presencas extends State<Presencas> {
   final GlobalKey<_WidgetTableState> _widgetTableKey = GlobalKey<_WidgetTableState>();
 
   
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -52,6 +54,7 @@ class WidgetTable extends StatefulWidget {
   const WidgetTable({super.key});
 
   
+  @override
   State<WidgetTable> createState() => _WidgetTableState();
 }
 
@@ -89,6 +92,7 @@ class _WidgetTableState extends State<WidgetTable> {
   }
 
   
+  @override
   void initState() {
     super.initState();
     _carregarDadosUsuario();
@@ -276,8 +280,8 @@ class _WidgetTableState extends State<WidgetTable> {
                     DataRow(cells: [
                       DataCell(Text(doc['nome'] ?? '')),
                       DataCell(Text(doc['data'] ?? '')),
-                      DataCell(Text(doc['entrada'] != null ? _formatarHora(DateTime.parse(doc['entrada'])) : '-')),
-                      DataCell(Text(doc['saida'] != null ? _formatarHora(DateTime.parse(doc['saida'])) : '-')),
+                      DataCell(Text(doc['entrada'] != null ? _formatarHora(DateTime.parse(doc['entrada'])) : '-')), 
+                      DataCell(Text(doc['saida'] != null ? _formatarHora(DateTime.parse(doc['saida'])) : '-')), 
                       DataCell(Text(doc['horas_trabalhadas'] ?? '')),
                     ]),
                 ],
@@ -289,7 +293,7 @@ class _WidgetTableState extends State<WidgetTable> {
     );
   }
 
-  
+  @override
   Widget build(BuildContext context) {
     if (loading) {
       return const Center(child: CircularProgressIndicator());
@@ -298,59 +302,14 @@ class _WidgetTableState extends State<WidgetTable> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        tableContainer(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 600),
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('DATA', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('ENTRADA', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('SAÍDA', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('HORAS TRABALHADAS', style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: [
-                  DataRow(cells: [
-                    DataCell(Text(nomeCooperado ?? '')),
-                    DataCell(Text(_formatarData(DateTime.now()))),
-                    DataCell(
-                      entrada == null
-                          ? ElevatedButton(
-                              onPressed: () => _registrarPresenca(isEntrada: true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-                                minimumSize: const Size(100, 40),
-                              ),
-                              child: const Text('Registrar', style: TextStyle(color: Colors.white)),
-                            )
-                          : Text(_formatarHora(entrada!)),
-                    ),
-                    DataCell(
-                      entrada != null && saida == null
-                          ? ElevatedButton(
-                              onPressed: () => _registrarPresenca(isEntrada: false),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-                                minimumSize: const Size(100, 40),
-                              ),
-                              child: const Text('Registrar', style: TextStyle(color: Colors.white)),
-                            )
-                          : (saida != null ? Text(_formatarHora(saida!)) : const Text('-')),
-                    ),
-                    DataCell(
-                      (entrada != null && saida != null && horasTrabalhadas != null)
-                          ? Text(_formatarDuracaoCompleta(horasTrabalhadas!))
-                          : const Text('-'),
-                    ),
-                  ]),
-                ],
-              ),
-            ),
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth > 600) {
+              return _buildWideInputTable();
+            } else {
+              return _buildNarrowInputTable();
+            }
+          },
         ),
         const SizedBox(height: 24),
         // Centraliza título, filtro e tabela de histórico, removendo título duplicado
@@ -402,9 +361,9 @@ class _WidgetTableState extends State<WidgetTable> {
             );
           },
           style: ButtonStyle(
-            minimumSize: WidgetStateProperty.all(const Size(150, 75)),
-            backgroundColor: WidgetStateProperty.all(Colors.orange),
-            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+            minimumSize: MaterialStateProperty.all(const Size(150, 75)),
+            backgroundColor: MaterialStateProperty.all(Colors.orange),
+            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
               RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
@@ -413,6 +372,115 @@ class _WidgetTableState extends State<WidgetTable> {
           child: const Text('Voltar', style: TextStyle(color: Colors.white)),
         ),
       ],
+    );
+  }
+
+  Widget _buildWideInputTable() {
+    return tableContainer(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 600),
+          child: DataTable(
+            columns: const [
+              DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('DATA', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('ENTRADA', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('SAÍDA', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('HORAS TRABALHADAS', style: TextStyle(fontWeight: FontWeight.bold))),
+            ],
+            rows: [
+              DataRow(cells: [
+                DataCell(Text(nomeCooperado ?? '')),
+                DataCell(Text(_formatarData(DateTime.now()))),
+                DataCell(
+                  entrada == null
+                      ? ElevatedButton(
+                          onPressed: () => _registrarPresenca(isEntrada: true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                            minimumSize: const Size(100, 40),
+                          ),
+                          child: const Text('Registrar', style: TextStyle(color: Colors.white)),
+                        )
+                      : Text(_formatarHora(entrada!)),
+                ),
+                DataCell(
+                  entrada != null && saida == null
+                      ? ElevatedButton(
+                          onPressed: () => _registrarPresenca(isEntrada: false),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                            minimumSize: const Size(100, 40),
+                          ),
+                          child: const Text('Registrar', style: TextStyle(color: Colors.white)),
+                        )
+                      : (saida != null ? Text(_formatarHora(saida!)) : const Text('-')),
+                ),
+                DataCell(
+                  (entrada != null && saida != null && horasTrabalhadas != null)
+                      ? Text(_formatarDuracaoCompleta(horasTrabalhadas!))
+                      : const Text('-'),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNarrowInputTable() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            _buildNarrowInputRow('NOME', Text(nomeCooperado ?? '')),
+            _buildNarrowInputRow('DATA', Text(_formatarData(DateTime.now()))),
+            _buildNarrowInputRow('ENTRADA', entrada == null
+                ? ElevatedButton(
+                    onPressed: () => _registrarPresenca(isEntrada: true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                      minimumSize: const Size(100, 40),
+                    ),
+                    child: const Text('Registrar', style: TextStyle(color: Colors.white)),
+                  )
+                : Text(_formatarHora(entrada!))),
+            _buildNarrowInputRow('SAÍDA', entrada != null && saida == null
+                ? ElevatedButton(
+                    onPressed: () => _registrarPresenca(isEntrada: false),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                      minimumSize: const Size(100, 40),
+                    ),
+                    child: const Text('Registrar', style: TextStyle(color: Colors.white)),
+                  )
+                : (saida != null ? Text(_formatarHora(saida!)) : const Text('-'))),
+            _buildNarrowInputRow('HORAS TRABALHADAS', (entrada != null && saida != null && horasTrabalhadas != null)
+                ? Text(_formatarDuracaoCompleta(horasTrabalhadas!))
+                : const Text('-')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNarrowInputRow(String label, Widget child) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          child,
+        ],
+      ),
     );
   }
 }
