@@ -1,6 +1,6 @@
 // Tela para exibir os materiais coletados pelo cooperado (materiais_qtd)
 // Comentado em pt-br
-
+//a
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,30 +31,49 @@ class _Materiais4State extends State<Materiais4> {
 
   // Carrega o UID da cooperativa e os materiais_qtd do cooperado logado
   Future<void> _carregarMateriaisQtd() async {
-    final profile = await _userProfileService.getUserProfileInfo();
+    try {
+      final profile = await _userProfileService.getUserProfileInfo();
 
-    if (profile.role != UserRole.cooperado || profile.cooperadoUid == null || profile.cooperativaUid == null || profile.prefeituraUid == null) {
-      setState(() => isLoading = false);
-      return;
-    }
-
-    final docCooperado = await FirebaseFirestore.instance
-        .collection('prefeituras').doc(profile.prefeituraUid)
-        .collection('cooperativas').doc(profile.cooperativaUid)
-        .collection('cooperados').doc(profile.cooperadoUid)
-        .get();
-
-    if (docCooperado.exists && docCooperado.data() != null) {
-      final data = docCooperado.data()!;
-      if (data.containsKey('materiais_qtd')) {
-        materiaisQtd = Map<String, dynamic>.from(data['materiais_qtd']);
+      if (profile.role != UserRole.cooperado ||
+          profile.cooperadoUid == null ||
+          profile.cooperativaUid == null ||
+          profile.prefeituraUid == null) {
+        if (mounted) setState(() => isLoading = false);
+        return;
       }
-      if (data.containsKey('materiaisG_qtd')) {
-        materiaisGQtd = Map<String, dynamic>.from(data['materiaisG_qtd']);
-      }
-    }
 
-    setState(() => isLoading = false);
+      final firestore = FirebaseFirestore.instance;
+      final cooperativaRef = firestore
+          .collection('prefeituras')
+          .doc(profile.prefeituraUid)
+          .collection('cooperativas')
+          .doc(profile.cooperativaUid);
+
+      // Busca os dados do cooperado e da cooperativa em paralelo
+      final results = await Future.wait([
+        cooperativaRef.collection('cooperados').doc(profile.cooperadoUid).get(),
+        cooperativaRef.get(),
+      ]);
+
+      final docCooperado = results[0] as DocumentSnapshot<Map<String, dynamic>>;
+      if (docCooperado.exists && docCooperado.data() != null) {
+        final data = docCooperado.data()!;
+        if (data.containsKey('materiais_qtd')) {
+          materiaisQtd = Map<String, dynamic>.from(data['materiais_qtd']);
+        }
+      }
+
+      final docCooperativa = results[1] as DocumentSnapshot<Map<String, dynamic>>;
+      if (docCooperativa.exists && docCooperativa.data() != null) {
+        final data = docCooperativa.data()!;
+        if (data.containsKey('materiaisG_qtd')) {
+          materiaisGQtd = Map<String, dynamic>.from(data['materiaisG_qtd']);
+        }
+      }
+    } catch (e) {
+      debugPrint("Erro ao carregar materiais: $e");
+    }
+    if (mounted) setState(() => isLoading = false);
   }
 
   @override

@@ -24,8 +24,11 @@ class _Perfil extends State<Perfil> {
   String? nome;
   String? documento;
   String? telefone;
+  String? email;
+  String? cooperativaNome;
   String? fotoUrl;
-  bool _isUploading = false; // Estado para controlar o upload da foto
+  UserRole? _userRole;
+  bool _isUploading = false;
   bool isLoading = true;
 
   @override
@@ -34,25 +37,52 @@ class _Perfil extends State<Perfil> {
     _carregarDadosUsuario();
   }
 
-  // Busca os dados do usuário autenticado no Firestore e exibe na tela de perfil
   Future<void> _carregarDadosUsuario() async {
-    setState(() { isLoading = true; });
+    setState(() {
+      isLoading = true;
+    });
     final profile = await _userProfileService.getUserProfileInfo();
+    _userRole = profile.role;
     DocumentSnapshot? doc;
 
-    if (profile.role == UserRole.cooperado && profile.prefeituraUid != null && profile.cooperativaUid != null && profile.cooperadoUid != null) {
+    if (profile.role == UserRole.cooperado &&
+        profile.prefeituraUid != null &&
+        profile.cooperativaUid != null &&
+        profile.cooperadoUid != null) {
       doc = await FirebaseFirestore.instance
-          .collection('prefeituras').doc(profile.prefeituraUid)
-          .collection('cooperativas').doc(profile.cooperativaUid)
-          .collection('cooperados').doc(profile.cooperadoUid)
+          .collection('prefeituras')
+          .doc(profile.prefeituraUid)
+          .collection('cooperativas')
+          .doc(profile.cooperativaUid)
+          .collection('cooperados')
+          .doc(profile.cooperadoUid)
           .get();
-    } else if (profile.role == UserRole.cooperativa && profile.prefeituraUid != null && profile.cooperativaUid != null) {
+
+      // Buscar nome da cooperativa
+      final cooperativaDoc = await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(profile.prefeituraUid)
+          .collection('cooperativas')
+          .doc(profile.cooperativaUid)
+          .get();
+      if (cooperativaDoc.exists) {
+        cooperativaNome = cooperativaDoc.data()?['nome'];
+      }
+    } else if (profile.role == UserRole.cooperativa &&
+        profile.prefeituraUid != null &&
+        profile.cooperativaUid != null) {
       doc = await FirebaseFirestore.instance
-          .collection('prefeituras').doc(profile.prefeituraUid)
-          .collection('cooperativas').doc(profile.cooperativaUid)
+          .collection('prefeituras')
+          .doc(profile.prefeituraUid)
+          .collection('cooperativas')
+          .doc(profile.cooperativaUid)
           .get();
-    } else if (profile.role == UserRole.prefeitura && profile.prefeituraUid != null) {
-      doc = await FirebaseFirestore.instance.collection('prefeituras').doc(profile.prefeituraUid).get();
+    } else if (profile.role == UserRole.prefeitura &&
+        profile.prefeituraUid != null) {
+      doc = await FirebaseFirestore.instance
+          .collection('prefeituras')
+          .doc(profile.prefeituraUid)
+          .get();
     }
 
     if (doc != null && doc.exists) {
@@ -61,6 +91,7 @@ class _Perfil extends State<Perfil> {
         nome = data?['nome'] ?? 'Sem nome';
         documento = data?['cpf'] ?? data?['cnpj'] ?? '-';
         telefone = data?['telefone'] ?? '-';
+        email = data?['email'] ?? '-';
         fotoUrl = data?['fotoUrl'];
         isLoading = false;
       });
@@ -69,6 +100,7 @@ class _Perfil extends State<Perfil> {
         nome = 'Usuário não encontrado';
         documento = '-';
         telefone = '-';
+        email = '-';
         fotoUrl = null;
         isLoading = false;
       });
@@ -200,6 +232,7 @@ class _Perfil extends State<Perfil> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
+                          const SizedBox(height: 20),
                           CircleAvatar(
                             radius: 50.0,
                             backgroundColor: Colors.grey.shade300,
@@ -232,27 +265,7 @@ class _Perfil extends State<Perfil> {
                             elevation: 5.0,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 22.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  // CPF ou CNPJ real do usuário
-                                  Text(
-                                    'CPF/CNPJ: ${documento ?? '-'}',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Telefone do usuário
-                                  Text(
-                                    'Telefone: ${telefone ?? '-'}',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                    ),
-                                  ),                                                                 
-                                ],
-                              ),
+                              child: _buildUserInfo(),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -278,5 +291,72 @@ class _Perfil extends State<Perfil> {
               ],
             ),
     );
+  }
+
+  Widget _buildUserInfo() {
+    if (_userRole == UserRole.cooperativa || _userRole == UserRole.prefeitura) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Nome: ${nome ?? '-'}',
+            style: TextStyle(
+              color: Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'CNPJ: ${documento ?? '-'}',
+            style: TextStyle(
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Email: ${email ?? '-'}',
+            style: TextStyle(
+              color: Colors.green,
+            ),
+          ),
+        ],
+      );
+    } else if (_userRole == UserRole.cooperado) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Nome: ${nome ?? '-'}',
+            style: TextStyle(
+              color: Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'CPF: ${documento ?? '-'}',
+            style: TextStyle(
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Telefone: ${telefone ?? '-'}',
+            style: TextStyle(
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Cooperativa participante: ${cooperativaNome ?? '-'}',
+            style: TextStyle(
+              color: Colors.green,
+            ),
+          ),
+        ],
+      );
+    } else {
+      return const Text('Informações do usuário não disponíveis.');
+    }
   }
 }
