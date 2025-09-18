@@ -20,6 +20,8 @@ import 'package:infoeco3/verificarCooperados.dart';
 import 'package:infoeco3/user_profile_service.dart'; // Importa o serviço de perfil
 import 'package:infoeco3/verificarCooperativas.dart';
 import 'package:infoeco3/verificarDocumentos.dart';
+import 'package:infoeco3/verificar_partilhas.dart';
+import 'package:infoeco3/verificar_coletas.dart';
 import 'package:infoeco3/widgets/large_menu_button.dart';
 import 'package:infoeco3/main.dart';
 
@@ -275,6 +277,18 @@ class _MenuState extends State<Menu> {
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => VerificarCooperados())),
         child: Text('VERIFICAR COOPERADOS', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.green,
+      ),
+      SizedBox(height: 10),
+            LargeMenuButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VerificarPartilhas())),
+        child: const Text('VERIFICAR PARTILHAS', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.cyan,
+      ),
+      SizedBox(height: 10),
+      LargeMenuButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VerificarColetas())),
+        child: const Text('VERIFICAR COLETAS', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.indigo,
       ),
       SizedBox(height: 10),
       LargeMenuButton(

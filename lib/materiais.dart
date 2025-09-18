@@ -162,6 +162,7 @@ class _MateriaisState extends State<Materiais> {
     final materialNome = materiaisRows[rowIndex].nome;
     final quantidade = materiaisRows[rowIndex].quantidade;
     final partilha = materiais[materialNome]?['partilha'];
+    final valor = _calcularValor(materialNome, quantidade);
 
     if (quantidade <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -169,6 +170,34 @@ class _MateriaisState extends State<Materiais> {
       );
       return;
     }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Envio'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Material: $materialNome'),
+            Text('Quantidade: $quantidade'),
+            Text('Valor: R\$ ${valor.toStringAsFixed(2)}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
 
     final firestore = FirebaseFirestore.instance;
     final cooperadoRef = firestore
@@ -209,6 +238,16 @@ class _MateriaisState extends State<Materiais> {
         transaction.update(cooperativaRef, {'materiaisG_qtd': materiaisQtdGeral});
       });
     }
+
+    await cooperativaRef.collection('coletas_materiais').add({
+      'user_uid': user.uid,
+      'material': {
+        'material_name': materialNome,
+        'qtd': quantidade,
+      },  
+      'data': FieldValue.serverTimestamp(),
+      'partilha_realizada': false,
+    });
 
     await _atualizarValorPartilha();
     if (!mounted) return;
