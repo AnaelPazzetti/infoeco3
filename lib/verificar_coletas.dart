@@ -191,7 +191,14 @@ class _VerificarColetasState extends State<VerificarColetas> {
           oldMateriaisQtd[materialName] = newCooperadoQty;
 
           transaction.update(cooperadoRef, {'materiais_qtd': oldMateriaisQtd});
-          transaction.update(coletaRef, {'material.qtd': newQty});
+
+          final Map<String, dynamic> updateData = {
+            'material.qtd': newQty,
+            'alteradoAuditoria': true,
+            'auditoriaData': FieldValue.serverTimestamp(),
+            'valorPrevio': oldQty,
+          };
+          transaction.update(coletaRef, updateData);
 
           final partilha = materiais[materialName]?['partilha'];
           if (partilha == 'Individual') {
