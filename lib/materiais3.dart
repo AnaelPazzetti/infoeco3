@@ -215,7 +215,7 @@ class _Materiais3State extends State<Materiais3> {
           .doc(prefeituraUid)
           .collection('cooperativas')
           .doc(cooperativaUid)
-          .collection('partilhas_cooperados')
+          .collection('partilhas_realizadas')
           .add({
             'timestamp': FieldValue.serverTimestamp(),
             'parcial': true,
@@ -429,6 +429,7 @@ class _Materiais3State extends State<Materiais3> {
                             'parcial': false,
                             'materiais': materiais,
                             'materiais_qtd': materiaisQtdCooperado,
+                            'valor_partilha': valorPartilhaAtual,
                           });
 
                       // Reset cooperado's materiais_qtd and valor_partilha
@@ -453,7 +454,7 @@ class _Materiais3State extends State<Materiais3> {
                         .doc(prefeituraUid)
                         .collection('cooperativas')
                         .doc(cooperativaUid)
-                        .collection('partilhas_cooperados')
+                        .collection('partilhas_realizadas')
                         .add({
                           'timestamp': FieldValue.serverTimestamp(),
                           'cooperados': cooperadosDataForPartilha,
