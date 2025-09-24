@@ -43,51 +43,8 @@ The application is built around a multi-role system, providing tailored function
 
 ---
 
-## 📂 Project Structure
-
-The `lib` directory is organized to separate concerns and promote code reuse.
-
-```
-lib/
-├── main.dart                   # App entry point, Firebase initialization
-├── menu.dart                     # Main menu screen with role-based navigation
-├── user_profile_service.dart     # Service to fetch user role and profile data
-│
-├── login.dart                    # Login type selection screen
-├── cadastro.dart                 # Registration type selection screen
-│
-├── prefeitura.dart               # Login screen for Prefeituras
-├── prefeituraC.dart              # Registration screen for Prefeituras
-├── cooperativa.dart              # Login screen for Cooperativas
-├── cooperativaC.dart             # Registration screen for Cooperativas
-├── cooperado.dart                # Login screen for Cooperados
-├── cooperadoC.dart               # Registration screen for Cooperados
-│
-├── materiais.dart                # (Cooperado) Screen to submit collected materials.
-├── materiais2.dart               # (Cooperativa) Screen to manage the material list and prices.
-├── materiais3.dart               # (Cooperativa) Screen to view stock and perform financial distribution (partilha).
-├── materiais4.dart               # (Cooperado) Screen to view personal collected materials.
-│
-├── presencas.dart                # Screens for attendance tracking
-├── presencas_cooperativa.dart
-│
-├── historico.dart                # (Cooperado) View personal history of financial distributions.
-├── historico_cooperativa.dart    # (Cooperativa/Prefeitura) View cooperative's history of distributions.
-│
-├── documentos.dart               # Screens for document handling
-├── verificarDocumentos.dart
-│
-├── widgets/                      # Reusable UI widgets
-│   ├── large_menu_button.dart
-│   └── table_widgets.dart
-│
-├── form_fields.dart              # Reusable form field component
-└── firebase_options.dart         # Firebase project configuration (generated)
-```
-
----
 
 ## 🗄️ Firestore Database Schema
 
 The database is structured hierarchically to represent the relationships between entities. A top-level `users` collection is used for fast role lookups on login.
-
+Although it's a simple DB structure and not the most performant, considering the system will be used by a low pre-defined number of people (a maximum of 200 people and only around 5 of them won't be cooperators), this ensures the necessary performance since the most intensive feature used will be the relationship between a cooperator and its cooperative.
