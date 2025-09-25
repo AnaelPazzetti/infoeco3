@@ -58,11 +58,12 @@ class _HistoricoState extends State<Historico> {
     setState(() => isLoading = false);
   }
 
-  void _exportToCsv(Map<String, dynamic> materiaisQtd, Map<String, dynamic> materiaisPreco) {
+  void _exportToCsv(Map<String, dynamic> materiaisQtd, Map<String, dynamic> materiaisInfo) {
     final headers = ['Material', 'Preço (Reais)', 'Quantidade (kg)'];
     final rows = materiaisQtd.entries.map((entry) {
       final material = entry.key;
-      final preco = materiaisPreco[entry.key]?.toString() ?? '-';
+      final precoRaw = materiaisInfo[entry.key]?['preco'];
+      final preco = (precoRaw is num) ? precoRaw.toStringAsFixed(2) : '-';
       final quantidade = entry.value.toString();
       return [material, preco, quantidade];
     }).toList();
@@ -87,31 +88,17 @@ class _HistoricoState extends State<Historico> {
       );
     }
     final partilhaSelecionada = partilhas[selectedPartilhaIndex];
-    final materiaisQtd = partilhaSelecionada['materiais_qtd'] ?? {};
-    final materiaisPreco = partilhaSelecionada['materiais_preco'] ?? {};
+    final materiaisQtd = partilhaSelecionada['materiais_qtd'] as Map<String, dynamic>? ?? {};
+    final materiaisInfo = partilhaSelecionada['materiais'] as Map<String, dynamic>? ?? {};
     final valorPartilha = partilhaSelecionada['valor_partilha'] ?? 0;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Histórico de Partilhas'),
         actions: [
           IconButton(
             icon: const Icon(Icons.download),
-            onPressed: () {
-              final headers = ['Material', 'Preço (Reais)', 'Quantidade (kg)'];
-              final rows = materiaisQtd.entries.map((entry) {
-                final material = entry.key;
-                final preco = materiaisPreco[entry.key]?.toString() ?? '-';
-                final quantidade = entry.value.toString();
-                return [material, preco, quantidade];
-              }).toList();
-
-              XlsxExporter.exportData(
-                context,
-                headers: headers,
-                rows: rows,
-                fileName: 'historico_partilhas',
-              );
-            },
+            onPressed: () => _exportToCsv(materiaisQtd, materiaisInfo),
           ),
         ],
       ),
@@ -162,7 +149,7 @@ class _HistoricoState extends State<Historico> {
                         for (final entry in materiaisQtd.entries)
                           DataRow(cells: [
                             DataCell(Text(entry.key)),
-                            DataCell(Text(materiaisPreco[entry.key]?.toString() ?? '-')),
+                            DataCell(Text((materiaisInfo[entry.key]?['preco'] as num?)?.toStringAsFixed(2) ?? '-')),
                             DataCell(Text(entry.value.toString())),
                           ]),
                       ],

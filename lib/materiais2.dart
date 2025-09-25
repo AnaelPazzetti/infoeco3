@@ -216,9 +216,40 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
           .doc(cooperativaUid)
           .update({'materiais': materiais});
       
+      await _atualizarPartilhasCooperados();
       await _carregarMateriais();
       setState(() => isLoading = false);
     }
+  }
+
+  // Adicionado para recalcular o valor da partilha de todos os cooperados após a alteração de um preço
+  Future<void> _atualizarPartilhasCooperados() async {
+    final cooperadosSnapshot = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('cooperados')
+        .get();
+
+    final WriteBatch batch = FirebaseFirestore.instance.batch();
+
+    for (final cooperadoDoc in cooperadosSnapshot.docs) {
+      final cooperadoData = cooperadoDoc.data();
+      final materiaisQtdCoop = Map<String, dynamic>.from(cooperadoData['materiais_qtd'] ?? {});
+      
+      double novoValorPartilha = 0.0;
+      materiaisQtdCoop.forEach((material, quantidade) {
+        if (materiais.containsKey(material)) {
+          final preco = materiais[material]!['preco'] ?? 0.0;
+          novoValorPartilha += (quantidade as num) * preco;
+        }
+      });
+
+      batch.update(cooperadoDoc.reference, {'valor_partilha': novoValorPartilha});
+    }
+
+    await batch.commit();
   }
 
   @override

@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:infoeco3/user_profile_service.dart';
@@ -24,12 +23,19 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
   bool loading = true;
   final TextEditingController _searchController = TextEditingController();
 
+  // New state variables for history
+  List<QueryDocumentSnapshot> _partilhasDocs = [];
+  QueryDocumentSnapshot? _selectedPartilha;
+  bool _isHistoryLoading = true;
+
   @override
   void initState() {
     super.initState();
     cooperativaUid = widget.cooperativaUid;
     prefeituraUid = widget.prefeituraUid;
-    _carregarCooperativaUid();
+    _carregarCooperativaUid().then((_) {
+      _carregarHistoricoPartilhas();
+    });
   }
 
   Future<void> _carregarCooperativaUid() async {
@@ -46,6 +52,44 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
     setState(() {
       loading = false;
     });
+  }
+
+  Future<void> _carregarHistoricoPartilhas() async {
+    if (cooperativaUid == null || prefeituraUid == null) return;
+    setState(() {
+      _isHistoryLoading = true;
+    });
+    final partilhasSnap = await FirebaseFirestore.instance
+        .collection('prefeituras')
+        .doc(prefeituraUid)
+        .collection('cooperativas')
+        .doc(cooperativaUid)
+        .collection('partilhas_cooperados')
+        .orderBy('timestamp', descending: true)
+        .get();
+    setState(() {
+      _partilhasDocs = partilhasSnap.docs;
+      _isHistoryLoading = false;
+    });
+  }
+
+  String _formatarData(dynamic data) {
+    if (data == null) return 'Sem data';
+    try {
+      DateTime dt;
+      if (data is Timestamp) {
+        dt = data.toDate();
+      } else if (data is String) {
+        dt = DateTime.parse(data);
+      } else if (data is DateTime) {
+        dt = data;
+      } else {
+        return data.toString();
+      }
+      return "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (e) {
+      return data.toString();
+    }
   }
 
   @override
@@ -88,7 +132,7 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
                 children: [
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text('Partilhas Registradas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    child: Text('Partilha Atual', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   ),
                   SizedBox(
                     width: 200,
@@ -162,6 +206,69 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
                         );
                       },
                     ),
+                    const SizedBox(height: 32),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    const Text('Histórico de Partilhas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 16),
+                    if (_isHistoryLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_partilhasDocs.isEmpty)
+                      const Center(child: Text('Nenhum histórico de partilha encontrado.'))
+                    else
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Selecionar data: ', style: TextStyle(fontSize: 16)),
+                          DropdownButton<QueryDocumentSnapshot>(
+                            value: _selectedPartilha,
+                            hint: const Text('Selecione uma data'),
+                            items: _partilhasDocs.map((doc) {
+                              return DropdownMenuItem<QueryDocumentSnapshot>(
+                                value: doc,
+                                child: Text(_formatarData(doc['timestamp'])),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedPartilha = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    if (_selectedPartilha != null)
+                      Builder(
+                        builder: (context) {
+                          final data = _selectedPartilha!.data() as Map<String, dynamic>;
+                          final cooperados = List<Map<String, dynamic>>.from(data['cooperados'] ?? []);
+                          if (cooperados.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text('Nenhum dado de cooperado para esta partilha.'),
+                            );
+                          }
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minWidth: 600),
+                              child: DataTable(
+                                columns: const [
+                                  DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('VALOR RECEBIDO', style: TextStyle(fontWeight: FontWeight.bold))),
+                                ],
+                                rows: [
+                                  for (var cooperado in cooperados)
+                                    DataRow(cells: [
+                                      DataCell(Text(cooperado['cooperado_nome'] ?? '', style: const TextStyle(fontSize: 16))),
+                                      DataCell(Text('R\$ ${cooperado['valor_recebido']?.toStringAsFixed(2) ?? '0.00'}', style: const TextStyle(fontSize: 16))),
+                                    ]),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                      )
                 ],
               ),
             ),
