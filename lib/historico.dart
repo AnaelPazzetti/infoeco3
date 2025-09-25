@@ -5,7 +5,6 @@ import 'package:infoeco3/menu.dart';
 import 'historico2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
 import 'user_profile_service.dart'; // Importa o serviço de perfil de usuário
 import 'package:infoeco3/xlsx_exporter.dart';
 
@@ -102,69 +101,59 @@ class _HistoricoState extends State<Historico> {
           ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double tableWidth = constraints.maxWidth * 0.95;
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: tableWidth,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text('Histórico de Partilhas',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('Selecionar data: '),
-                        DropdownButton<int>(
-                          value: selectedPartilhaIndex,
-                          items: [
-                            for (int i = 0; i < partilhas.length; i++)
-                              DropdownMenuItem(
-                                value: i,
-                                child: Text(_formatarData(partilhas[i]['data'])),
-                              ),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) setState(() => selectedPartilhaIndex = value);
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Material')),
-                        DataColumn(label: Text('Preço (R\$)')),
-                        DataColumn(label: Text('Quantidade (kg)')),
-                      ],
-                      rows: [
-                        for (final entry in materiaisQtd.entries)
-                          DataRow(cells: [
-                            DataCell(Text(entry.key)),
-                            DataCell(Text((materiaisInfo[entry.key]?['preco'] as num?)?.toStringAsFixed(2) ?? '-')),
-                            DataCell(Text(entry.value.toString())),
-                          ]),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Valor da partilha nesta data: R\$ ${valorPartilha is num ? valorPartilha.toStringAsFixed(2) : valorPartilha}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
-                    ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text('Histórico de Partilhas',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Selecionar data: '),
+                DropdownButton<int>(
+                  value: selectedPartilhaIndex,
+                  items: [
+                    for (int i = 0; i < partilhas.length; i++)
+                      DropdownMenuItem(
+                        value: i,
+                        child: Text(_formatarData(partilhas[i]['data'])),
+                      ),
                   ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => selectedPartilhaIndex = value);
+                  },
                 ),
-              ),
+              ],
             ),
-          );
-        },
+            const SizedBox(height: 16),
+            DataTable(
+              dividerThickness: 1,
+              headingRowColor: MaterialStateColor.resolveWith((states) => Colors.green.shade200),
+              columns: const [
+                DataColumn(label: Text('Material')),
+                DataColumn(label: Text('Preço (R\$)')),
+                DataColumn(label: Text('Quantidade (kg)')),
+              ],
+              rows: [
+                for (final entry in materiaisQtd.entries)
+                  DataRow(cells: [
+                    DataCell(Text(entry.key)),
+                    DataCell(Text((materiaisInfo[entry.key]?['preco'] as num?)?.toStringAsFixed(2) ?? '-')),
+                    DataCell(Text(entry.value.toString())),
+                  ]),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Valor da partilha nesta data: R\$ ${valorPartilha is num ? valorPartilha.toStringAsFixed(2) : valorPartilha}',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
+            ),
+          ],
+        ),
       ),
     );
   }

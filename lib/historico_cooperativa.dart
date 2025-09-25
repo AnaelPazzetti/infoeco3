@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:infoeco3/user_profile_service.dart';
-import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
 import 'package:infoeco3/xlsx_exporter.dart';
 
 class HistoricoCooperativa extends StatefulWidget {
@@ -149,50 +148,33 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                tableContainer(
-                  child: allMaterials.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(
-                            child: Text(
-                                'Nenhum material registrado para esta partilha.'),
-                          ),
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                                child: Table(
-                                  columnWidths: const <int, TableColumnWidth>{
-                                    0: FlexColumnWidth(2),
-                                    1: FlexColumnWidth(1.5),
-                                    2: FlexColumnWidth(1.5),
-                                  },
-                                  border: TableBorder.all(
-                                      color: Colors.grey[300]!, width: 1),
-                                  children: [
-                                    TableRow(children: [
-                                      celulaHeader('Material'),
-                                      celulaHeader('Preço (R\$)'),
-                                      celulaHeader('Quantidade (kg)'),
-                                    ]),
-                                    for (final entry in allMaterials.entries)
-                                      TableRow(children: [
-                                        celula(entry.key),
-                                        celula((materiaisInfo[entry.key]?['preco'] as num?)
-                                                ?.toStringAsFixed(2) ??
-                                            '-'),
-                                        celula(entry.value.toString()),
-                                      ]),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                allMaterials.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(
+                          child: Text(
+                              'Nenhum material registrado para esta partilha.'),
                         ),
-                ),
+                      )
+                    : DataTable(
+                        dividerThickness: 1,
+                        headingRowColor: MaterialStateColor.resolveWith((states) => Colors.green.shade200),
+                        columns: const [
+                          DataColumn(label: Text('Material')),
+                          DataColumn(label: Text('Preço (R\$)')),
+                          DataColumn(label: Text('Quantidade (kg)')),
+                        ],
+                        rows: [
+                          for (final entry in allMaterials.entries)
+                            DataRow(cells: [
+                              DataCell(Text(entry.key)),
+                              DataCell(Text((materiaisInfo[entry.key]?['preco'] as num?)
+                                      ?.toStringAsFixed(2) ??
+                                  '-')),
+                              DataCell(Text(entry.value.toString())),
+                            ]),
+                        ],
+                      ),
               ],
             ),
           ),
