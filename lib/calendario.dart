@@ -272,13 +272,20 @@ class _Calendario extends State<Calendario> {
   List<EventoData> _eventosProximos15Dias() {
     List<EventoData> eventosFuturos = [];
     DateTime dataLimite = todaysDate.add(const Duration(days: 15));
-    mySelectedEvents.forEach((data, eventos) {
-      if (data.isAfter(todaysDate) && data.isBefore(dataLimite)) {
-        for (var evento in eventos) {
-          eventosFuturos.add(EventoData(data: data, event: evento));
+
+    _eventosPorDia.forEach((data, eventos) {
+      for (var eventoData in eventos) {
+        // Checa se o evento está no futuro e dentro do limite de 15 dias
+        if (eventoData.data.isAfter(todaysDate) &&
+            eventoData.data.isBefore(dataLimite)) {
+          eventosFuturos.add(eventoData);
         }
       }
     });
+
+    // Ordena os eventos por data
+    eventosFuturos.sort((a, b) => a.data.compareTo(b.data));
+
     return eventosFuturos;
   }
 
@@ -374,38 +381,43 @@ class _Calendario extends State<Calendario> {
                 },
               ),
             ),
-            // Exibe eventos do dia selecionado (oculta se for hoje ou se não houver eventos)
-            if (!(isSameDay(selectedCalendarDate, todaysDate) || _listOfDayEvents(selectedCalendarDate!).isEmpty))
+            // Exibe eventos do dia selecionado
+            if (selectedCalendarDate != null &&
+                !isSameDay(selectedCalendarDate, todaysDate))
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Eventos do dia selecionado:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    const Text(
+                      'Eventos da data selecionada:',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                    ..._listOfDayEvents(selectedCalendarDate!).map(
-                      (eventoData) => ListTile(
-                        leading: const Icon(
-                          Icons.event,
-                          color: Colors.greenAccent,
-                        ),
-                        title: Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Text('Título: ${eventoData.event.eventTitle}'),
-                        ),
-                        subtitle: Text(
-                          'Descrição: ${eventoData.event.eventDescp}\nData: ${_formatarData(eventoData.data)}',
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 8),
+                    ..._listOfDayEvents(selectedCalendarDate!).isEmpty
+                        ? [const Text('Nenhum evento para esta data.')]
+                        : _listOfDayEvents(selectedCalendarDate!)
+                            .map((eventoData) => ListTile(
+                                  leading: const Icon(
+                                    Icons.event,
+                                    color: Colors.greenAccent,
+                                  ),
+                                  title: Padding(
+                                    padding: const EdgeInsets.only(bottom: 8.0),
+                                    child: Text(
+                                        'Título: ${eventoData.event.eventTitle}'),
+                                  ),
+                                  subtitle: Text(
+                                      'Descrição: ${eventoData.event.eventDescp}\nData: ${_formatarData(eventoData.data)}'),
+                                )),
                   ],
                 ),
               ),
+
             // Exibe eventos do dia atual (today)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -430,7 +442,7 @@ class _Calendario extends State<Calendario> {
                               ))
                       : [
                           Padding(
-                            padding: const EdgeInsets.only(left: 16.0, top: 4.0),
+                            padding: const EdgeInsets.only(top: 4.0),
                             child: Text('Nenhum evento marcado para hoje.'),
                           )
                         ]),
@@ -439,7 +451,7 @@ class _Calendario extends State<Calendario> {
             ),
             // Exibe eventos dos próximos 15 dias a partir da data atual
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -447,21 +459,29 @@ class _Calendario extends State<Calendario> {
                     'Próximos 15 dias:',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  ..._eventosProximos15Dias().map(
-                    (eventoData) => ListTile(
-                      leading: const Icon(
-                        Icons.event_available,
-                        color: Colors.orange,
-                      ),
-                      title: Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text('Título: ${eventoData.event.eventTitle}'),
-                      ),
-                      subtitle: Text(
-                        'Descrição: ${eventoData.event.eventDescp}\nData: ${_formatarData(eventoData.data)}',
-                      ),
-                    ),
-                  ),
+                  ...(_eventosProximos15Dias().isEmpty
+                      ? [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child:
+                                Text('Nenhum evento para os próximos 15 dias.'),
+                          )
+                        ]
+                      : _eventosProximos15Dias().map(
+                          (eventoData) => ListTile(
+                            leading: const Icon(
+                              Icons.event_available,
+                              color: Colors.orange,
+                            ),
+                            title: Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Text('Título: ${eventoData.event.eventTitle}'),
+                            ),
+                            subtitle: Text(
+                              'Descrição: ${eventoData.event.eventDescp}\nData: ${_formatarData(eventoData.data)}',
+                            ),
+                          ),
+                        )),
                 ],
               ),
             ),
