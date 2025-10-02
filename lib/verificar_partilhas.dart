@@ -92,6 +92,37 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
     }
   }
 
+  void _showMaterialDetailsDialog(BuildContext context, Map<String, dynamic> materiais) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Detalhes dos Materiais'),
+          content: SingleChildScrollView(
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text('Material')),
+                DataColumn(label: Text('Quantidade')),
+              ],
+              rows: materiais.entries.map((entry) {
+                return DataRow(cells: [
+                  DataCell(Text(entry.key)),
+                  DataCell(Text(entry.value.toString())),
+                ]);
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -192,12 +223,28 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
                                 columns: const [
                                   DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
                                   DataColumn(label: Text('VALOR DA PARTILHA', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('DETALHES', style: TextStyle(fontWeight: FontWeight.bold))),
                                 ],
                                 rows: [
                                   for (var doc in _docs)
                                     DataRow(cells: [
                                       DataCell(Text(doc['nome'] ?? '', style: const TextStyle(fontSize: 16))),
                                       DataCell(Text('R\$ ${doc['valor_partilha'] ?? '0'}', style: const TextStyle(fontSize: 16))),
+                                      DataCell(
+                                        IconButton(
+                                          icon: const Icon(Icons.more_horiz),
+                                          onPressed: () {
+                                            final materiais = doc['materiais_qtd'] as Map<String, dynamic>?;
+                                            if (materiais != null && materiais.isNotEmpty) {
+                                              _showMaterialDetailsDialog(context, materiais);
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Nenhum material encontrado para este cooperado.')),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
                                     ]),
                                 ],
                               ),
@@ -256,12 +303,28 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
                                 columns: const [
                                   DataColumn(label: Text('NOME', style: TextStyle(fontWeight: FontWeight.bold))),
                                   DataColumn(label: Text('VALOR RECEBIDO', style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('DETALHES', style: TextStyle(fontWeight: FontWeight.bold))),
                                 ],
                                 rows: [
                                   for (var cooperado in cooperados)
                                     DataRow(cells: [
                                       DataCell(Text(cooperado['cooperado_nome'] ?? '', style: const TextStyle(fontSize: 16))),
                                       DataCell(Text('R\$ ${cooperado['valor_recebido']?.toStringAsFixed(2) ?? '0.00'}', style: const TextStyle(fontSize: 16))),
+                                      DataCell(
+                                        IconButton(
+                                          icon: const Icon(Icons.more_horiz),
+                                          onPressed: () {
+                                            final materiais = cooperado['materiais_entregues'] as Map<String, dynamic>?;
+                                            if (materiais != null && materiais.isNotEmpty) {
+                                              _showMaterialDetailsDialog(context, materiais);
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Nenhum material encontrado para este cooperado.')),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
                                     ]),
                                 ],
                               ),

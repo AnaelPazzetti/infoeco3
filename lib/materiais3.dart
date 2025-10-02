@@ -2,16 +2,20 @@
 // por cooperativas. Ele exibe uma tabela com os materiais e suas quantidades.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:infoeco3/partilha_service.dart';
 import 'package:infoeco3/user_profile_service.dart';
-import 'package:infoeco3/widgets/table_widgets.dart'; // Importa os widgets de tabela reutilizáveis
+import 'package:infoeco3/widgets/dialogs.dart';
 
 class Materiais3 extends StatefulWidget {
   final String? cooperativaUid;
   final String? prefeituraUid;
   final bool viewOnly;
-  const Materiais3({super.key, this.cooperativaUid, this.prefeituraUid, this.viewOnly = false});
+  const Materiais3(
+      {super.key,
+      this.cooperativaUid,
+      this.prefeituraUid,
+      this.viewOnly = false});
 
   @override
   _Materiais3State createState() => _Materiais3State();
@@ -19,6 +23,7 @@ class Materiais3 extends StatefulWidget {
 
 class _Materiais3State extends State<Materiais3> {
   final UserProfileService _userProfileService = UserProfileService();
+  final PartilhaService _partilhaService = PartilhaService();
   String? cooperativaUid;
   String? prefeituraUid;
   bool get viewOnly => widget.viewOnly;
@@ -82,175 +87,71 @@ class _Materiais3State extends State<Materiais3> {
 
   // Função para realizar a partilha parcial de um material
   Future<void> _partilhaParcial(String material) async {
-    if (cooperativaUid == null) return;
-    final confirm = await showDialog<bool>(
+    if (cooperativaUid == null || prefeituraUid == null) return;
+
+    final confirm = await showConfirmationDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmação'),
-        content: Text('Tem certeza que deseja realizar a partilha parcial de "$material"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
+      title: 'Confirmação',
+      content:
+          'Tem certeza que deseja realizar a partilha parcial de "$material"?',
     );
+
     if (confirm != true) return;
-    
+
     setState(() => isLoading = true);
 
-    final docCoopRef = FirebaseFirestore.instance
-        .collection('prefeituras')
-        .doc(prefeituraUid)
-        .collection('cooperativas')
-        .doc(cooperativaUid);
-    
-    final docCoopSnap = await docCoopRef.get();
-    
-    if (!docCoopSnap.exists) {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro: Cooperativa não encontrada.')),
-        );
-        return;
+    try {
+      await _partilhaService.realizarPartilhaParcial(
+        prefeituraUid: prefeituraUid!,
+        cooperativaUid: cooperativaUid!,
+        material: material,
+        materiaisGerais: materiaisGerais,
+        materiaisIndividuais: materiaisIndividuais,
+      );
+      await _carregarMateriaisQtd();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Partilha parcial realizada para "$material"!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao realizar partilha parcial: $e')),
+      );
+    } finally {
+      setState(() => isLoading = false);
     }
+  }
 
-    final docCoopData = docCoopSnap.data()!;
-    final materiais = docCoopData['materiais'] as Map<String, dynamic>? ?? {};
-    final materialInfo = materiais[material] as Map<String, dynamic>?;
+  Future<void> _partilhaTotal() async {
+    if (cooperativaUid == null || prefeituraUid == null) return;
 
-    if (materialInfo == null) {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: Dados para o material "$material" não encontrados.')),
-        );
-        return;
-    }
-
-    final preco = (materialInfo['preco'] ?? 0).toDouble();
-    final tipoPartilha = (materialInfo['partilha'] as String?)?.toLowerCase() ?? 'individual';
-
-    if (tipoPartilha == 'geral') {
-      // Partilha Parcial for "Geral" material
-      final quantidade = materiaisGerais[material];
-      
-      // 1. Create partilha document for cooperativa
-      await docCoopRef.collection('partilhas').add({
-        'materiaisG_qtd': {material: quantidade},
-        'materiais': {material: materialInfo},
-        'data': DateTime.now().toIso8601String(),
-        'parcial': true,
-      });
-
-      // 2. Reset material in cooperativa's materiaisG_qtd
-      Map<String, dynamic> currentMateriaisGQtd = Map<String, dynamic>.from(docCoopData['materiaisG_qtd'] ?? {});
-      currentMateriaisGQtd[material] = 0;
-      await docCoopRef.update({'materiaisG_qtd': currentMateriaisGQtd});
-
-    } else { // 'individual'
-      // Partilha Parcial for "Individual" material
-      final quantidade = materiaisIndividuais[material];
-
-      // 1. Create partilha document for cooperativa
-      await docCoopRef.collection('partilhas').add({
-        'materiais_qtd': {material: quantidade},
-        'materiais': {material: materialInfo},
-        'data': DateTime.now().toIso8601String(),
-        'parcial': true,
-      });
-
-      // 2. Loop through cooperados and update their data
-      final cooperadosSnapshot = await docCoopRef.collection('cooperados').get();
-      
-      List<Map<String, dynamic>> cooperadosDataForPartilha = [];
-
-      for (final cooperadoDoc in cooperadosSnapshot.docs) {
-        final cooperadoData = cooperadoDoc.data();
-        Map<String, dynamic> materiaisQtdCoop = Map<String, dynamic>.from(cooperadoData['materiais_qtd'] ?? {});
-        
-        final qtdMaterialCooperado = (materiaisQtdCoop[material] ?? 0) as num;
-        if (qtdMaterialCooperado > 0) {
-            final valorPartilhaDoc = preco * qtdMaterialCooperado;
-            materiaisQtdCoop[material] = 0;
-
-            // Gather data for summary doc
-            final nomeCooperado = cooperadoData['nome'] ?? 'Nome não encontrado';
-            cooperadosDataForPartilha.add({
-              "cooperado_uid": cooperadoDoc.id,
-              "cooperado_nome": nomeCooperado,
-              "valor_recebido": valorPartilhaDoc,
-              "material_entregue": {
-                "nome": material,
-                "quantidade": qtdMaterialCooperado
-              }
-            });
-
-            // Create partilha for cooperado
-            await cooperadoDoc.reference.collection('partilhas').add({
-                'materiais_qtd': {material: qtdMaterialCooperado},
-                'materiais': {material: materialInfo},
-                'data': DateTime.now().toIso8601String(),
-                'valor_partilha': valorPartilhaDoc,
-                'parcial': true,
-            });
-
-            // Update cooperado's valor_partilha and materiais_qtd
-            await cooperadoDoc.reference.update({
-                'valor_partilha': FieldValue.increment(-valorPartilhaDoc),
-                'materiais_qtd': materiaisQtdCoop,
-            });
-        }
-      }
-
-      // Create the summary document for partial share
-      if (cooperadosDataForPartilha.isNotEmpty) {
-        await FirebaseFirestore.instance
-          .collection('prefeituras')
-          .doc(prefeituraUid)
-          .collection('cooperativas')
-          .doc(cooperativaUid)
-          .collection('partilhas_realizadas')
-          .add({
-            'timestamp': FieldValue.serverTimestamp(),
-            'parcial': true,
-            'material_partilhado': material,
-            'cooperados': cooperadosDataForPartilha,
-          });
-      }
-
-      // 3. Reset material in cooperativa's materiais_qtd
-      Map<String, dynamic> currentMateriaisQtd = Map<String, dynamic>.from(docCoopData['materiais_qtd'] ?? {});
-      currentMateriaisQtd[material] = 0;
-      await docCoopRef.update({'materiais_qtd': currentMateriaisQtd});
-    }
-
-    // Set partilha_realizada to true for the specific material
-    final WriteBatch batch = FirebaseFirestore.instance.batch();
-    final coletasSnapshot = await FirebaseFirestore.instance
-        .collection('prefeituras')
-        .doc(prefeituraUid)
-        .collection('cooperativas')
-        .doc(cooperativaUid)
-        .collection('coletas_materiais')
-        .where('partilha_realizada', isEqualTo: false)
-        .where('material.material_name', isEqualTo: material)
-        .get();
-
-    for (final doc in coletasSnapshot.docs) {
-      batch.update(doc.reference, {'partilha_realizada': true});
-    }
-    await batch.commit();
-
-    await _carregarMateriaisQtd();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Partilha parcial realizada para "$material"!')),
+    final confirm = await showConfirmationDialog(
+      context: context,
+      title: 'Confirmação',
+      content: 'Tem certeza que deseja realizar a partilha total?',
     );
+
+    if (confirm != true) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      await _partilhaService.realizarPartilhaTotal(
+        prefeituraUid: prefeituraUid!,
+        cooperativaUid: cooperativaUid!,
+        materiaisIndividuais: materiaisIndividuais,
+      );
+      await _carregarMateriaisQtd();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Partilha total realizada e materiais resetados!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao realizar partilha total: $e')),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -292,8 +193,9 @@ class _Materiais3State extends State<Materiais3> {
                           icon: const Icon(Icons.account_balance_wallet,
                               color: Colors.orange),
                           tooltip: 'Partilha parcial',
-                          onPressed:
-                              viewOnly ? null : () => _partilhaParcial(entry.key),
+                          onPressed: viewOnly
+                              ? null
+                              : () => _partilhaParcial(entry.key),
                         ),
                       ),
                     ]);
@@ -320,8 +222,9 @@ class _Materiais3State extends State<Materiais3> {
                           icon: const Icon(Icons.account_balance_wallet,
                               color: Colors.orange),
                           tooltip: 'Partilha parcial',
-                          onPressed:
-                              viewOnly ? null : () => _partilhaParcial(entry.key),
+                          onPressed: viewOnly
+                              ? null
+                              : () => _partilhaParcial(entry.key),
                         ),
                       ),
                     ]);
@@ -335,155 +238,7 @@ class _Materiais3State extends State<Materiais3> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
         child: ElevatedButton(
-          onPressed: viewOnly
-              ? null
-              : () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Confirmação'),
-                      content: const Text(
-                          'Tem certeza que deseja realizar a partilha total?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange),
-                          child: const Text('Confirmar'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    // Get materials data which includes prices
-                    final doc = await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .get();
-                    final Map<String, dynamic> materiais = doc.exists ? Map<String, dynamic>.from(doc.data()!['materiais'] ?? {}) : {};
-                    
-                    // Create cooperative's partilha document
-                    await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .collection('partilhas')
-                        .add({
-                      'data': DateTime.now().toIso8601String(),
-                      'parcial': false,
-                      'materiais': materiais,
-                      'materiais_qtd': Map<String, dynamic>.from(materiaisIndividuais),
-                    });
-
-                    // Reset cooperative's materiais_qtd
-                    final resetMap = Map<String, dynamic>.from(
-                        materiaisIndividuais.map((k, v) => MapEntry(k, 0)));
-                    await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .update({'materiais_qtd': resetMap});
-                    
-                    // Process each cooperado
-                    List<Map<String, dynamic>> cooperadosDataForPartilha = [];
-                    final cooperadosSnapshot = await FirebaseFirestore
-                        .instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .collection('cooperados')
-                        .get();
-                    for (final cooperadoDoc in cooperadosSnapshot.docs) {
-                      final cooperadoData = cooperadoDoc.data();
-                      final valorPartilhaAtual = (cooperadoData['valor_partilha'] ?? 0).toDouble();
-                      final materiaisQtdCooperado = Map<String, dynamic>.from(cooperadoData['materiais_qtd'] ?? {});
-                      final nomeCooperado = cooperadoData['nome'] ?? 'Nome não encontrado';
-
-                      cooperadosDataForPartilha.add({
-                        "cooperado_uid": cooperadoDoc.id,
-                        "cooperado_nome": nomeCooperado,
-                        "valor_recebido": valorPartilhaAtual,
-                        "materiais_entregues": materiaisQtdCooperado,
-                      });
-
-                      // Create cooperado's partilha document
-                      await FirebaseFirestore.instance
-                          .collection('prefeituras')
-                          .doc(prefeituraUid)
-                          .collection('cooperativas')
-                          .doc(cooperativaUid)
-                          .collection('cooperados')
-                          .doc(cooperadoDoc.id)
-                          .collection('partilhas')
-                          .add({
-                            'data': DateTime.now().toIso8601String(),
-                            'parcial': false,
-                            'materiais': materiais,
-                            'materiais_qtd': materiaisQtdCooperado,
-                            'valor_partilha': valorPartilhaAtual,
-                          });
-
-                      // Reset cooperado's materiais_qtd and valor_partilha
-                      final resetCoopMap = Map<String, dynamic>.from(
-                          materiaisQtdCooperado.map((k, v) => MapEntry(k, 0)));
-                      await FirebaseFirestore.instance
-                          .collection('prefeituras')
-                          .doc(prefeituraUid)
-                          .collection('cooperativas')
-                          .doc(cooperativaUid)
-                          .collection('cooperados')
-                          .doc(cooperadoDoc.id)
-                          .update({
-                        'materiais_qtd': resetCoopMap,
-                        'valor_partilha': 0
-                      });
-                    }
-
-                    // Create the summary document in 'partilhas_realizadas'
-                    await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .collection('partilhas_realizadas')
-                        .add({
-                          'timestamp': FieldValue.serverTimestamp(),
-                          'cooperados': cooperadosDataForPartilha,
-                        });
-
-                    // Set partilha_realizada to true for all relevant coletas
-                    final WriteBatch batch = FirebaseFirestore.instance.batch();
-                    final coletasSnapshot = await FirebaseFirestore.instance
-                        .collection('prefeituras')
-                        .doc(prefeituraUid)
-                        .collection('cooperativas')
-                        .doc(cooperativaUid)
-                        .collection('coletas_materiais')
-                        .where('partilha_realizada', isEqualTo: false)
-                        .get();
-
-                    for (final doc in coletasSnapshot.docs) {
-                      batch.update(doc.reference, {'partilha_realizada': true});
-                    }
-                    await batch.commit();
-
-                    await _carregarMateriaisQtd(); // Recarrega os dados para atualizar a tabela
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Partilha total realizada e materiais resetados!')),
-                    );
-                  }
-                },
+          onPressed: viewOnly ? null : _partilhaTotal,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orange,
             minimumSize: const Size(250, 50),
