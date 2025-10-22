@@ -266,6 +266,7 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
                                                               onPressed: () async {
                                                                 final picked = await showDatePicker(
                                                                   context: context,
+                                                                  locale: const Locale('pt', 'BR'),
                                                                   initialDate: tempEntrada ?? DateTime.now(),
                                                                   firstDate: DateTime(2020),
                                                                   lastDate: DateTime(2100),
@@ -292,6 +293,7 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
                                                               onPressed: () async {
                                                                 final picked = await showDatePicker(
                                                                   context: context,
+                                                                  locale: const Locale('pt', 'BR'),
                                                                   initialDate: tempSaida ?? DateTime.now(),
                                                                   firstDate: DateTime(2020),
                                                                   lastDate: DateTime(2100),
