@@ -169,9 +169,11 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
                     width: 200,
                     child: TextField(
                       controller: _searchController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Buscar por nome',
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
                         isDense: true,
                       ),
                       onChanged: (_) {
@@ -263,24 +265,36 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
                     else if (_partilhasDocs.isEmpty)
                       const Center(child: Text('Nenhum histórico de partilha encontrado.'))
                     else
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const Text('Selecionar data: ', style: TextStyle(fontSize: 16)),
-                          DropdownButton<QueryDocumentSnapshot>(
-                            value: _selectedPartilha,
-                            hint: const Text('Selecione uma data'),
-                            items: _partilhasDocs.map((doc) {
-                              return DropdownMenuItem<QueryDocumentSnapshot>(
-                                value: doc,
-                                child: Text(_formatarData(doc['timestamp'])),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedPartilha = value;
-                              });
-                            },
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: 200,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: DropdownButton<QueryDocumentSnapshot>(
+                                value: _selectedPartilha,
+                                hint: const Text('Selecione uma data'),
+                                underline: const SizedBox(),
+                                items: _partilhasDocs.map((doc) {
+                                  return DropdownMenuItem<QueryDocumentSnapshot>(
+                                    value: doc,
+                                    child: Text(_formatarData(doc['timestamp'])),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedPartilha = value;
+                                  });
+                                },
+                              ),
+                            ),
                           ),
                         ],
                       ),

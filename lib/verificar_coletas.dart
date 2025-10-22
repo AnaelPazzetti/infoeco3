@@ -246,36 +246,62 @@ class _VerificarColetasState extends State<VerificarColetas> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                DropdownButton<int>(
-                  value: _limit,
-                  items: [10, 25, 50, 100, -1].map((limit) {
-                    return DropdownMenuItem<int>(
-                      value: limit,
-                      child: Text(limit == -1 ? 'Todos' : limit.toString()),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _limit = value;
-                      });
-                    }
-                  },
-                ),
-                DropdownButton<String>(
-                  value: _partilhaFilter,
-                  items: const [
-                    DropdownMenuItem(value: 'any', child: Text('Qualquer')),
-                    DropdownMenuItem(value: 'true', child: Text('Realizada')),
-                    DropdownMenuItem(value: 'false', child: Text('Não Realizada')),
+                Column(
+                  children: [
+                    const Text('Numero de Registros'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: DropdownButton<int>(
+                        value: _limit,
+                        underline: const SizedBox(),
+                        items: [10, 25, 50, 100, -1].map((limit) {
+                          return DropdownMenuItem<int>(
+                            value: limit,
+                            child: Text(limit == -1 ? 'Todos' : limit.toString()),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _limit = value;
+                            });
+                          }
+                        },
+                      ),
+                    ),
                   ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _partilhaFilter = value;
-                      });
-                    }
-                  },
+                ),
+                Column(
+                  children: [
+                    const Text('Partilha Realizada:'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _partilhaFilter,
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(value: 'any', child: Text('Qualquer')),
+                          DropdownMenuItem(value: 'true', child: Text('Realizada')),
+                          DropdownMenuItem(value: 'false', child: Text('Não Realizada')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _partilhaFilter = value;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -327,8 +353,9 @@ class _VerificarColetasState extends State<VerificarColetas> {
                           DataCell(
                               Text(materialData['qtd']?.toString() ?? 'N/A')),
                           DataCell(Text(formattedDate)),
-                          DataCell(Text(
-                              data['partilha_realizada']?.toString() ?? 'false')),
+                          DataCell(Text(data['partilha_realizada'] == true
+                              ? 'Realizada'
+                              : 'Não realizada')),
                           DataCell(
                             IconButton(
                               icon: const Icon(Icons.edit),
