@@ -125,7 +125,7 @@ class _CooperativaState extends State<Cooperativa> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadastro Cooperativa')),
+      appBar: AppBar(title: const Text('Cadastro Cooperativa'), backgroundColor: Colors.green),
       body: Form(
         key: _formKey,
         child: Center(

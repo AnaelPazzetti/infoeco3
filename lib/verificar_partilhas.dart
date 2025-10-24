@@ -130,6 +130,7 @@ class _VerificarPartilhasState extends State<VerificarPartilhas> {
     }
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Partilhas dos Cooperados'),
         actions: [
           IconButton(

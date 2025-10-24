@@ -213,6 +213,7 @@ class _Perfil extends State<Perfil> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Perfil'),
       ),
       body: isLoading

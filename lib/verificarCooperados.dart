@@ -65,6 +65,7 @@ class _VerificarCooperadosState extends State<VerificarCooperados> {
     }
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Cooperados vinculados'),
       ),
       body: cooperativaUid == null

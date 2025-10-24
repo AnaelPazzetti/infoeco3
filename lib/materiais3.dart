@@ -161,6 +161,7 @@ class _Materiais3State extends State<Materiais3> {
     }
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Materiais Separados'),
       ),
       body: SingleChildScrollView(

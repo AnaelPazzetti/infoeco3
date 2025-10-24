@@ -119,7 +119,7 @@ class _CooperadoState extends State<Cooperado> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login Cooperado')),
+      appBar: AppBar(title: const Text('Login Cooperado'), backgroundColor: Colors.green),
       body: Form(
         key: keyform_,
         child: Center(

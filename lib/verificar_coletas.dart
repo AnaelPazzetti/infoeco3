@@ -238,6 +238,7 @@ class _VerificarColetasState extends State<VerificarColetas> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Coletas de Materiais'),
+        backgroundColor: Colors.green,
       ),
       body: Column(
         children: [
@@ -359,7 +360,16 @@ class _VerificarColetasState extends State<VerificarColetas> {
                           DataCell(
                             IconButton(
                               icon: const Icon(Icons.edit),
-                              onPressed: () => _editarQuantidadeColeta(doc),
+                              onPressed: (data['partilha_realizada'] == true)
+                                  ? () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Não é possível editar coletas referentes à partilhas já realizadas'),
+                                        ),
+                                      );
+                                    }
+                                  : () => _editarQuantidadeColeta(doc),
                             ),
                           ),
                         ],

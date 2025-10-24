@@ -82,7 +82,7 @@ class _HistoricoState extends State<Historico> {
     }
     if (partilhas.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Histórico de Partilhas')),
+        appBar: AppBar(title: const Text('Histórico de Partilhas'), backgroundColor: Colors.green),
         body: const Center(child: Text('Nenhuma partilha encontrada.')),
       );
     }
@@ -94,6 +94,7 @@ class _HistoricoState extends State<Historico> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Histórico de Partilhas'),
+        backgroundColor: Colors.green,
         actions: [
           IconButton(
             icon: const Icon(Icons.download),

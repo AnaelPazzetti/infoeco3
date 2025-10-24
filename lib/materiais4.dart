@@ -83,6 +83,7 @@ class _Materiais4State extends State<Materiais4> {
     }
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Materiais Coletados'),
         actions: [
           IconButton(

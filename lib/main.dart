@@ -98,6 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
       },
       child: Scaffold(
         appBar: AppBar(
+          backgroundColor: Colors.green,
           title: Text(widget.title),
         ),
         body: Center(

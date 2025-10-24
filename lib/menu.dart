@@ -91,7 +91,7 @@ class _MenuState extends State<Menu> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Menu')),
+        appBar: AppBar(title: const Text('Menu'), backgroundColor: Colors.green),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -108,6 +108,7 @@ class _MenuState extends State<Menu> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Menu'),
+          backgroundColor: Colors.green,
         ),
         body: const Center(
           child: Text(
@@ -123,6 +124,7 @@ class _MenuState extends State<Menu> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Menu'),
+          backgroundColor: Colors.green,
         ),
         body: const Center(
           child: Text(
@@ -170,6 +172,7 @@ class _MenuState extends State<Menu> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Menu'),
+          backgroundColor: Colors.green,
         ),
         body: SingleChildScrollView(
           scrollDirection: Axis.vertical,

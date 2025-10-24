@@ -257,7 +257,7 @@ class _VerificarDocumentosState extends State<VerificarDocumentos> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Verificar Documentos')),
+      appBar: AppBar(title: const Text('Verificar Documentos'), backgroundColor: Colors.green),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

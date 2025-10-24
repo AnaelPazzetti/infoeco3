@@ -59,6 +59,7 @@ class _Configuracoes extends State<Configuracoes> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configurações'),
+        backgroundColor: Colors.green,
       ),
       body: Center(
         child: Column(

@@ -127,6 +127,7 @@ class _TrocaSenhaState extends State<TrocaSenha> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Trocar Senha'),
       ),
       body: Center(

@@ -15,6 +15,7 @@ class Login extends StatelessWidget {
     return Scaffold(
       // AppBar com o título da página
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Login'), // Use a fixed title or pass it if needed
       ),
 

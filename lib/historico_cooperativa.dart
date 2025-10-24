@@ -92,7 +92,7 @@ class _HistoricoCooperativaState extends State<HistoricoCooperativa> {
     }
     if (partilhas.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Histórico de Partilhas')),
+        appBar: AppBar(title: const Text('Histórico de Partilhas'), backgroundColor: Colors.green),
         body: const Center(child: Text('Nenhuma partilha encontrada.')),
       );
     }

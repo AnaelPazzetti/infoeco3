@@ -201,6 +201,7 @@ class _DocumentosState extends State<Documentos1> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Enviar Documento'),
+        backgroundColor: Colors.green,
       ),
       body: Center(
         child: Column(

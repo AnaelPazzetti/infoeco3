@@ -75,6 +75,7 @@ class _PresencasCooperativaState extends State<PresencasCooperativa> {
     }
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Presenças da Cooperativa'),
         actions: [
           IconButton(

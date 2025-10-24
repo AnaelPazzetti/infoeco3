@@ -30,7 +30,7 @@ class _WidgetTable extends State<WidgetTable> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Histórico 2')),
+      appBar: AppBar(title: const Text('Histórico 2'), backgroundColor: Colors.green),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final double tableWidth = constraints.maxWidth * 0.9;

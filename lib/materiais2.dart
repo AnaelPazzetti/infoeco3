@@ -260,6 +260,7 @@ class _Materiais2ScreenState extends State<Materiais2Screen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gerenciar Materiais'),
+        backgroundColor: Colors.green,
         actions: [
           IconButton(
             icon: const Icon(Icons.download),

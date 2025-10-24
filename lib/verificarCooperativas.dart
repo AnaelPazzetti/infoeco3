@@ -47,6 +47,7 @@ class _VerificarCooperativasState extends State<VerificarCooperativas> {
     }
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
         title: const Text('Cooperativas vinculadas'),
       ),
       body: prefeituraUid == null

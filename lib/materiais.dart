@@ -265,7 +265,7 @@ class _MateriaisState extends State<Materiais> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Registrar Materiais')),
+      appBar: AppBar(title: const Text('Registrar Materiais'), backgroundColor: Colors.green),
       body: LayoutBuilder(
         builder: (context, constraints) {
           bool useWideLayout = constraints.maxWidth > 600;

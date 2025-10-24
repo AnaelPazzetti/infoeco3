@@ -299,6 +299,7 @@ class _Calendario extends State<Calendario> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendário'),
+        backgroundColor: Colors.green,
       ),
       body: SingleChildScrollView(
         child: Column(

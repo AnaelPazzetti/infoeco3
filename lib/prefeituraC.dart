@@ -87,7 +87,7 @@ class _PrefeituraCState extends State<PrefeituraC> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadastro Prefeitura')), // Add an AppBar
+      appBar: AppBar(title: const Text('Cadastro Prefeitura'), backgroundColor: Colors.green), // Add an AppBar
       body: Form(
         key: _formKey, // Usa a nova chave
         child: Center(
