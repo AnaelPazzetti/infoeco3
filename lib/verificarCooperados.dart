@@ -96,25 +96,63 @@ class _VerificarCooperadosState extends State<VerificarCooperados> {
                             if (docs.isEmpty) {
                               return const Center(child: Text('Nenhum cooperado cadastrado.'));
                             }
+
+                            docs.sort((a, b) {
+                              final aData = a.data() as Map<String, dynamic>;
+                              final bData = b.data() as Map<String, dynamic>;
+                              final aDispensado = aData.containsKey('DataSaida') && aData['DataSaida'] != null;
+                              final bDispensado = bData.containsKey('DataSaida') && bData['DataSaida'] != null;
+                              if (aDispensado && !bDispensado) {
+                                return 1;
+                              }
+                              if (!aDispensado && bDispensado) {
+                                return -1;
+                              }
+                              return 0;
+                            });
+
                             return DataTable(
                               columns: const [
                                 DataColumn(label: Text('NOME')),
                                 DataColumn(label: Text('CPF')),
-                                DataColumn(label: Text('APROVAR')),
+                                DataColumn(label: Text('AÇÕES')),
                               ],
                               rows: docs.map((doc) {
-                                final aprovado = doc['aprovacao_cooperativa'] == true;
+                                final data = doc.data() as Map<String, dynamic>;
+                                final aprovado = data['aprovacao_cooperativa'] == true;
+                                final bool foiDispensado = data.containsKey('DataSaida') && data['DataSaida'] != null;
+                                String nome = data['nome'] ?? '-';
+                                if (foiDispensado) {
+                                  final dataSaida = (data['DataSaida'] as Timestamp).toDate();
+                                  nome += ' (Data Saida: ${dataSaida.day}/${dataSaida.month}/${dataSaida.year})';
+                                }
+
                                 return DataRow(cells: [
-                                  DataCell(Text(doc['nome'] ?? '-')),
-                                  DataCell(Text(doc['cpf'] ?? '-')),
+                                  DataCell(Text(
+                                    nome,
+                                    style: TextStyle(
+                                      decoration: foiDispensado ? TextDecoration.lineThrough : TextDecoration.none,
+                                    ),
+                                  )),
+                                  DataCell(Text(data['cpf'] ?? '-')),
                                   DataCell(
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
                                         aprovado
-                                            ? const Icon(Icons.check, color: Colors.green)
+                                            ? Row(
+                                                children: [
+                                                  const Icon(Icons.check, color: Colors.green),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.person_remove, color: Colors.red),
+                                                    onPressed: viewOnly
+                                                        ? null
+                                                        : () => _showDismissConfirmationDialog(context, doc),
+                                                  ),
+                                                ],
+                                              )
                                             : ElevatedButton(
-                                                onPressed: viewOnly
+                                                onPressed: viewOnly || foiDispensado
                                                     ? null
                                                     : () async {
                                                         // Aprova no subdocumento do cooperado
@@ -125,7 +163,7 @@ class _VerificarCooperadosState extends State<VerificarCooperados> {
                                                             .doc(cooperativaUid)
                                                             .collection('cooperados')
                                                             .doc(doc.id)
-                                                            .update({'aprovacao_cooperativa': true});
+                                                            .update({'aprovacao_cooperativa': true, 'DataSaida': FieldValue.delete()});
                                                         // Também atualiza o campo isAprovado no registro do usuário
                                                         await FirebaseFirestore.instance
                                                             .collection('users')
@@ -155,6 +193,57 @@ class _VerificarCooperadosState extends State<VerificarCooperados> {
                 );
               },
             ),
+    );
+  }
+
+  Future<void> _showDismissConfirmationDialog(BuildContext context, DocumentSnapshot doc) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar Remoção'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Tem certeza que deseja remover o cooperado da cooperativa?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Remover'),
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection('prefeituras')
+                    .doc(prefeituraUid)
+                    .collection('cooperativas')
+                    .doc(cooperativaUid)
+                    .collection('cooperados')
+                    .doc(doc.id)
+                    .update({
+                  'aprovacao_cooperativa': false,
+                  'DataSaida': FieldValue.serverTimestamp(),
+                });
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(doc.id)
+                    .update({'isAprovado': false});
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  setState(() {});
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
