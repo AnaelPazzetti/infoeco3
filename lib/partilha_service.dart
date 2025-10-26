@@ -37,15 +37,38 @@ class PartilhaService {
       final tipoPartilha = (materialInfo['partilha'] as String?)?.toLowerCase() ?? 'individual';
 
       if (tipoPartilha == 'geral') {
-        final quantidade = materiaisGerais[material];
-        
+        final quantidade = (materiaisGerais[material] ?? 0) as num;
+        final totalValue = preco * quantidade;
+
+        // Create a master record for the general share
         transaction.set(docCoopRef.collection('partilhas').doc(), {
           'materiaisG_qtd': {material: quantidade},
           'materiais': {material: materialInfo},
           'data': DateTime.now().toIso8601String(),
           'parcial': true,
+          'tipo': 'geral_master', // Mark as master record
+          'valor_total': totalValue,
         });
 
+        // Get all members of the cooperative
+        final cooperadosSnapshot = await docCoopRef.collection('cooperados').get();
+        if (cooperadosSnapshot.docs.isNotEmpty) {
+          final valorPorCooperado = totalValue / cooperadosSnapshot.docs.length;
+
+          // Replicate the share document for each member
+          for (final cooperadoDoc in cooperadosSnapshot.docs) {
+            // Create a specific share record for the member in their subcollection
+            transaction.set(cooperadoDoc.reference.collection('partilhas').doc(), {
+              'materiais': {material: materialInfo},
+              'data': DateTime.now().toIso8601String(),
+              'valor_partilha': valorPorCooperado, // Set the value for this specific share
+              'parcial': true,
+              'tipo': 'geral_individual', // Mark as replicated record
+            });
+          }
+        }
+
+        // Reset the general material quantity for the cooperative
         Map<String, dynamic> currentMateriaisGQtd = Map<String, dynamic>.from(docCoopData['materiaisG_qtd'] ?? {});
         currentMateriaisGQtd[material] = 0;
         transaction.update(docCoopRef, {'materiaisG_qtd': currentMateriaisGQtd});
