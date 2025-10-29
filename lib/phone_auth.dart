@@ -18,6 +18,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   String? _verificationId;
 
   void _sendCode() async {
+    await _auth.setLanguageCode('pt'); // Set language to Portuguese
     String phoneNumber = "+55${_phoneController.text.trim()}"; // Brazil country code (+55)
     await _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
