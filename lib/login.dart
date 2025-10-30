@@ -2,6 +2,7 @@
 // Ele permite que o usuário escolha entre diferentes tipos de login: Prefeitura, Cooperativa ou Cooperado.
 
 import 'package:flutter/material.dart';
+import 'cooperado_login_selection.dart';
 import 'prefeitura.dart';
 import 'cooperativa.dart'; // Correctly imports CooperativaLogin
 import 'cooperado.dart';
@@ -60,7 +61,7 @@ class Login extends StatelessWidget {
             // Botão para login do Cooperado
             ElevatedButton(
               onPressed: () => Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => const Cooperado())),
+                  context, MaterialPageRoute(builder: (context) => const CooperadoLoginSelection())),
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 171, 228, 111),
                   minimumSize: const Size(300, 75),

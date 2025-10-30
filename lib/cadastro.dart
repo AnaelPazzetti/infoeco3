@@ -2,6 +2,7 @@
 // Ele permite que o usuário escolha entre cadastrar uma Prefeitura, Cooperativa ou Cooperado.
 
 import 'package:flutter/material.dart';
+import 'cooperado_auth_selection.dart';
 import 'prefeituraC.dart';
 import 'cooperativaC.dart';
 import 'cooperadoC.dart';
@@ -80,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ElevatedButton(
               onPressed: () {
                 Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => const Cooperado()));
+                    MaterialPageRoute(builder: (context) => const CooperadoAuthSelection()));
               },
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 171, 228, 111),
